@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        color-scheme: light;
+    }
+
+    body {
+        background-color: #f8fafc;
+    }
+
+    body.app-shell {
+        background-image:
+            radial-gradient(circle at top left, rgba(56, 189, 248, 0.22), transparent 34%),
+            radial-gradient(circle at top right, rgba(251, 191, 36, 0.2), transparent 28%),
+            linear-gradient(180deg, #020617 0%, #0f172a 24%, #eaf2ff 24%, #f8fafc 100%);
+        background-attachment: fixed;
+    }
+
+    ::selection {
+        background: rgba(14, 165, 233, 0.28);
+    }
+}
+
+@layer components {
+    .glass-panel {
+        @apply rounded-3xl border backdrop-blur-xl;
+        border-color: rgba(226, 232, 240, 0.7);
+        background-color: rgba(255, 255, 255, 0.82);
+        box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+    }
+
+    .stat-card {
+        @apply rounded-3xl border bg-white p-5;
+        border-color: rgba(226, 232, 240, 0.7);
+        box-shadow: 0 16px 42px rgba(148, 163, 184, 0.16);
+    }
+
+    .dark-panel {
+        @apply rounded-3xl border text-slate-100 backdrop-blur-xl;
+        border-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(2, 6, 23, 0.86);
+        box-shadow: 0 24px 80px rgba(2, 6, 23, 0.45);
+    }
+
+    .accent-link {
+        @apply inline-flex items-center justify-center rounded-full border px-4 py-2 text-sm font-semibold transition duration-200;
+    }
+}
