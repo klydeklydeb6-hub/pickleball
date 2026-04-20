@@ -13,10 +13,13 @@ class FacilitySetting extends Model
 
     protected static ?bool $courtDetailsReady = null;
 
+    protected static ?bool $publicCustomerNamesColumnReady = null;
+
     protected $guarded = [];
 
     protected $casts = [
         'court_details' => 'array',
+        'show_public_customer_names' => 'boolean',
     ];
 
     public static function defaults(): array
@@ -29,6 +32,7 @@ class FacilitySetting extends Model
             'new_paddle_rent_rate' => 60,
             'ball_rate' => 0,
             'court_details' => [],
+            'show_public_customer_names' => false,
         ];
     }
 
@@ -78,6 +82,22 @@ class FacilitySetting extends Model
         return static::$courtDetailsReady = Schema::hasColumn((new static)->getTable(), 'court_details');
     }
 
+    public static function publicCustomerNamesColumnReady(): bool
+    {
+        if (! static::tableExists()) {
+            return false;
+        }
+
+        if (static::$publicCustomerNamesColumnReady !== null) {
+            return static::$publicCustomerNamesColumnReady;
+        }
+
+        return static::$publicCustomerNamesColumnReady = Schema::hasColumn(
+            (new static)->getTable(),
+            'show_public_customer_names',
+        );
+    }
+
     public static function current(): self
     {
         $defaults = static::defaults();
@@ -103,6 +123,10 @@ class FacilitySetting extends Model
                 $defaults['court_count'],
                 $defaults['reservation_rate'],
             );
+        }
+
+        if (static::publicCustomerNamesColumnReady()) {
+            $fillableDefaults['show_public_customer_names'] = $defaults['show_public_customer_names'];
         }
 
         return static::query()->firstOrCreate(['id' => 1], $fillableDefaults);
@@ -147,6 +171,15 @@ class FacilitySetting extends Model
         }
 
         return (int) (static::current()->ball_rate ?? static::defaults()['ball_rate']);
+    }
+
+    public static function publicCustomerNamesVisible(): bool
+    {
+        if (! static::publicCustomerNamesColumnReady()) {
+            return (bool) static::defaults()['show_public_customer_names'];
+        }
+
+        return (bool) (static::current()->show_public_customer_names ?? static::defaults()['show_public_customer_names']);
     }
 
     public static function currentCourtDetails(): array

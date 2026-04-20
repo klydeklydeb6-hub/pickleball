@@ -16,6 +16,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
     Route::post('/admin/court-count', [DashboardController::class, 'updateCourtCount'])->name('admin.courts.update');
     Route::post('/admin/rates', [DashboardController::class, 'updateRates'])->name('admin.rates.update');
+    Route::post('/admin/public-reservations/visibility', [DashboardController::class, 'updatePublicReservationVisibility'])->name('admin.public-reservations.visibility.update');
     Route::post('/admin/walk-in-reservations', [DashboardController::class, 'storeWalkIn'])->name('admin.walkins.store');
     Route::post('/admin/reservations/{reservation}/unlock-reschedule', [DashboardController::class, 'unlockReschedule'])->name('admin.reservations.unlock-reschedule');
     Route::post('/admin/reservations/{reservation}/lock-reschedule', [DashboardController::class, 'lockReschedule'])->name('admin.reservations.lock-reschedule');

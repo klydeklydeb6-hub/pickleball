@@ -76,6 +76,8 @@ class DashboardController extends Controller
                 'rescheduleFeatureReady' => $rescheduleFeatureReady,
                 'contactNumberReady' => $contactNumberReady,
                 'rateSettingsReady' => $rateSettingsReady,
+                'publicCustomerNamesSettingReady' => FacilitySetting::publicCustomerNamesColumnReady(),
+                'showPublicCustomerNames' => FacilitySetting::publicCustomerNamesVisible(),
                 'minCourtCountAllowed' => max(1, $this->reservationManager->maxReservedCourtForActiveReservations()),
                 'timeSlots' => $timeSlots,
                 'reservationRate' => $this->reservationManager->reservationFee(),
@@ -227,6 +229,26 @@ class DashboardController extends Controller
 
         return redirect(route('admin.dashboard', ['panel' => 'rates'], absolute: false))
             ->with('success', 'Rates updated successfully.');
+    }
+
+    public function updatePublicReservationVisibility(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()?->isAdmin(), 403);
+
+        if (! FacilitySetting::tableExists() || ! FacilitySetting::publicCustomerNamesColumnReady()) {
+            return back()->with('error', 'Public reservation visibility setting is not ready yet. Run php artisan migrate first.');
+        }
+
+        $request->validate([
+            'show_public_customer_names' => 'nullable|boolean',
+        ]);
+
+        FacilitySetting::current()->update([
+            'show_public_customer_names' => $request->boolean('show_public_customer_names'),
+        ]);
+
+        return redirect(route('admin.dashboard', ['panel' => 'rates'], absolute: false))
+            ->with('success', 'Public reservation name visibility updated successfully.');
     }
 
     public function storeWalkIn(Request $request): RedirectResponse

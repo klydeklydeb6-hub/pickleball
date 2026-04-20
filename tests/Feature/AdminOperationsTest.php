@@ -147,6 +147,27 @@ class AdminOperationsTest extends TestCase
         $this->assertSame(90, (int) $settings->ball_rate);
     }
 
+    public function test_admin_can_toggle_public_reservation_name_visibility(): void
+    {
+        $adminRole = Role::findOrCreate('admin', 'web');
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+
+        $response = $this
+            ->actingAs($admin)
+            ->post('/admin/public-reservations/visibility', [
+                'show_public_customer_names' => '1',
+            ]);
+
+        $response->assertRedirect(route('admin.dashboard', ['panel' => 'rates'], absolute: false));
+
+        $this->assertTrue(FacilitySetting::publicCustomerNamesVisible());
+        $this->assertDatabaseHas('facility_settings', [
+            'id' => 1,
+            'show_public_customer_names' => 1,
+        ]);
+    }
+
     public function test_admin_can_unlock_rain_reschedule_for_registered_customer(): void
     {
         $adminRole = Role::findOrCreate('admin', 'web');

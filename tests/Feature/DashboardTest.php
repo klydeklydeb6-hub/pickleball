@@ -192,4 +192,20 @@ class DashboardTest extends TestCase
             ->assertSeeText('Rates & Rentals')
             ->assertSee('Court booking rate');
     }
+
+    public function test_admin_rates_panel_shows_public_reservation_visibility_control(): void
+    {
+        $adminRole = Role::findOrCreate('admin', 'web');
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+
+        $response = $this
+            ->actingAs($admin)
+            ->get('/admin?panel=rates');
+
+        $response
+            ->assertOk()
+            ->assertSeeText('Public Reservation List')
+            ->assertSeeText('Show customer names only on the public reservation list');
+    }
 }

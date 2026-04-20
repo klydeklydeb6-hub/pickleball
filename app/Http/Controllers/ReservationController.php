@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FacilitySetting;
 use App\Models\Reservation;
 use App\Support\ReservationManager;
 use Illuminate\Http\RedirectResponse;
@@ -84,6 +85,7 @@ class ReservationController extends Controller
             'oldPaddleRentRate' => $this->reservationManager->oldPaddleRentRate(),
             'newPaddleRentRate' => $this->reservationManager->newPaddleRentRate(),
             'ballRate' => $this->reservationManager->ballRate(),
+            'showPublicCustomerNames' => FacilitySetting::publicCustomerNamesVisible(),
             'contactNumberReady' => Reservation::contactNumberColumnReady(),
         ]);
     }

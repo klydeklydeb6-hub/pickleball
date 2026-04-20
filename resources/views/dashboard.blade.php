@@ -856,6 +856,55 @@
                             </div>
 
                             <div class="glass-panel p-6">
+                                @php
+                                    $showPublicCustomerNamesChecked = old('show_public_customer_names') === null
+                                        ? $showPublicCustomerNames
+                                        : old('show_public_customer_names') === '1';
+                                @endphp
+
+                                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Public Reservation List</h3>
+                                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                            Choose if customer names only will appear in the public <span class="font-medium">Reservations for</span> list. Contact numbers and emails stay visible to admin only.
+                                        </p>
+                                    </div>
+                                    <div class="rounded-xl bg-sky-50 px-4 py-3 text-sm text-sky-700 dark:bg-sky-950/40 dark:text-sky-300">
+                                        {{ $showPublicCustomerNames ? 'Customer names only are visible publicly' : 'Customer names are hidden publicly' }}
+                                    </div>
+                                </div>
+
+                                @if(! $publicCustomerNamesSettingReady)
+                                    <div class="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                                        Public reservation visibility is not ready yet. Run <code>php artisan migrate</code> first before saving changes.
+                                    </div>
+                                @endif
+
+                                <form method="POST" action="{{ route('admin.public-reservations.visibility.update') }}" class="mt-6 space-y-4">
+                                    @csrf
+                                    <input type="hidden" name="show_public_customer_names" value="0">
+
+                                    <label class="flex cursor-pointer items-start gap-4 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 dark:border-gray-700 dark:bg-gray-900/40">
+                                        <input
+                                            type="checkbox"
+                                            name="show_public_customer_names"
+                                            value="1"
+                                            class="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                            @checked($showPublicCustomerNamesChecked)
+                                        >
+                                        <span class="space-y-1">
+                                            <span class="block text-sm font-medium text-gray-900 dark:text-gray-100">Show customer names only on the public reservation list</span>
+                                            <span class="block text-sm text-gray-500 dark:text-gray-400">
+                                                When this is off, visitors and other players only see <span class="font-medium">Reserved slot</span>. When this is on, name only is shown publicly. Admin still keeps the full contact details inside the dashboard.
+                                            </span>
+                                        </span>
+                                    </label>
+
+                                    <x-primary-button>Save Visibility</x-primary-button>
+                                </form>
+                            </div>
+
+                            <div class="glass-panel p-6">
                                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Court Setup</h3>

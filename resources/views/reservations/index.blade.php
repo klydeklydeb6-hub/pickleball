@@ -420,10 +420,10 @@
 
     <div class="grid">
         <div>
+            @auth
             <div class="card">
                 <h2 class="panel-title">Reserve a Slot</h2>
 
-                @auth
                     <div class="account-box">
                         <strong>{{ auth()->user()->name }}</strong><br>
                         <span class="muted">{{ auth()->user()->email }}</span><br><br>
@@ -598,18 +598,8 @@
 
                         <button class="button" type="submit">Pay and Confirm Reservation</button>
                     </form>
-                @else
-                    <div class="account-box">
-                        <strong>Create an account or sign in first.</strong><br><br>
-                        <span class="muted">Only logged-in users can book a court now, so every reservation is connected to a real account and name.</span>
-                    </div>
-
-                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                        <a href="{{ route('login') }}" class="button-secondary">Login</a>
-                        <a href="{{ route('register') }}" class="button">Register Account</a>
-                    </div>
-                @endauth
             </div>
+            @endauth
 
             <div class="card">
                 <h2 class="panel-title">Availability for {{ \Illuminate\Support\Carbon::parse($selectedDate)->format('F d, Y') }}</h2>
@@ -662,26 +652,24 @@
 
                 @forelse($bookings as $booking)
                     <div class="booking-item">
-                        @auth
-                            @if(auth()->user()->isAdmin())
-                                <strong>{{ $booking->customer_name }}</strong>
-                                <span class="muted">
-                                    {{ $booking->contact_number ?: 'No contact number' }}
-                                    @if($booking->user?->email)
-                                        | {{ $booking->user->email }}
-                                    @elseif($booking->user_id === null)
-                                        | Walk-in / No account
-                                    @endif
-                                </span>
-                            @elseif($booking->user_id === auth()->id())
-                                <strong>Your reservation</strong>
-                                <span class="badge-mine">This booking is yours</span>
-                            @else
-                                <strong>Reserved slot</strong>
-                            @endif
+                        @if(auth()->check() && auth()->user()->isAdmin())
+                            <strong>{{ $booking->customer_name }}</strong>
+                            <span class="muted">
+                                {{ $booking->contact_number ?: 'No contact number' }}
+                                @if($booking->user?->email)
+                                    | {{ $booking->user->email }}
+                                @elseif($booking->user_id === null)
+                                    | Walk-in / No account
+                                @endif
+                            </span>
+                        @elseif(auth()->check() && $booking->user_id === auth()->id())
+                            <strong>Your reservation</strong>
+                            <span class="badge-mine">This booking is yours</span>
+                        @elseif($showPublicCustomerNames ?? false)
+                            <strong>{{ $booking->customer_name }}</strong>
                         @else
                             <strong>Reserved slot</strong>
-                        @endauth
+                        @endif
 
                         @php
                             $paddleRentQuantity = max(0, (int) ($booking->paddle_rent_quantity ?? 0));

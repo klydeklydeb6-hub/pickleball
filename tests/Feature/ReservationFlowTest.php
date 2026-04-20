@@ -230,6 +230,69 @@ class ReservationFlowTest extends TestCase
         $response->assertRedirect('/login');
     }
 
+    public function test_guest_booking_page_hides_the_reserve_slot_card(): void
+    {
+        $response = $this->get('/');
+
+        $response
+            ->assertOk()
+            ->assertDontSeeText('Reserve a Slot')
+            ->assertDontSeeText('Create an account or sign in first.')
+            ->assertSeeText('Reservations for');
+    }
+
+    public function test_public_reservation_list_hides_customer_names_by_default(): void
+    {
+        Reservation::create([
+            'user_id' => null,
+            'customer_name' => 'Hidden Public Name',
+            'booking_date' => now()->toDateString(),
+            'time_slot' => '6:00 AM',
+            'court_number' => 1,
+            'players' => 4,
+            'payment_method' => 'cash',
+            'payment_reference' => null,
+            'payment_status' => 'Paid',
+            'amount' => 500,
+            'receipt_no' => 'RCPT-HIDDEN-PUBLIC-001',
+        ]);
+
+        $response = $this->get('/');
+
+        $response
+            ->assertOk()
+            ->assertSeeText('Reserved slot')
+            ->assertDontSeeText('Hidden Public Name');
+    }
+
+    public function test_public_reservation_list_can_show_customer_names_when_enabled(): void
+    {
+        FacilitySetting::current()->update([
+            'show_public_customer_names' => true,
+        ]);
+
+        Reservation::create([
+            'user_id' => null,
+            'customer_name' => 'Visible Public Name',
+            'booking_date' => now()->toDateString(),
+            'time_slot' => '7:00 AM',
+            'court_number' => 2,
+            'players' => 4,
+            'payment_method' => 'cash',
+            'payment_reference' => null,
+            'payment_status' => 'Paid',
+            'amount' => 500,
+            'receipt_no' => 'RCPT-VISIBLE-PUBLIC-001',
+        ]);
+
+        $response = $this->get('/');
+
+        $response
+            ->assertOk()
+            ->assertSeeText('Visible Public Name')
+            ->assertDontSeeText('Walk-in / No account');
+    }
+
     public function test_booking_page_shows_current_court_and_rental_rates(): void
     {
         FacilitySetting::current()->update([
