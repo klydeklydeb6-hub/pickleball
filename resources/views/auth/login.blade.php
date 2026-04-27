@@ -2,8 +2,14 @@
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
+    @php($redirectTo = old('redirect_to', request('redirect_to')))
+
     <form method="POST" action="{{ route('login') }}">
         @csrf
+
+        @if($redirectTo)
+            <input type="hidden" name="redirect_to" value="{{ $redirectTo }}">
+        @endif
 
         <!-- Email Address -->
         <div>

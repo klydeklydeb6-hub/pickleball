@@ -119,8 +119,12 @@
         <strong>{{ $reservation->booking_date->format('F d, Y') }}</strong>
     </div>
     <div class="row">
-        <span class="label">Time Slot</span>
-        <strong>{{ $reservation->time_slot }}</strong>
+        <span class="label">Schedule</span>
+        <strong>{{ $reservation->timeRangeLabel() }}</strong>
+    </div>
+    <div class="row">
+        <span class="label">Duration</span>
+        <strong>{{ $reservation->durationLabel() }}</strong>
     </div>
     <div class="row">
         <span class="label">Court</span>

@@ -6,6 +6,7 @@ use App\Http\Controllers\ReservationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [ReservationController::class, 'index'])->name('reservations.index');
+Route::get('/receipt/verify', [ReservationController::class, 'verify'])->name('reservations.receipt.verify');
 
 Route::middleware('auth')->group(function () {
     Route::post('/reserve', [ReservationController::class, 'store'])->name('reservations.store');

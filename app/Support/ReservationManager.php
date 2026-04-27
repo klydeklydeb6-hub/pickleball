@@ -15,6 +15,121 @@ class ReservationManager
         ];
     }
 
+    public function maxBookingDurationHours(): int
+    {
+        return max(1, count($this->timeSlots()));
+    }
+
+    public function normalizeDurationHours($value): int
+    {
+        $durationHours = (int) $value;
+
+        if ($durationHours < 1) {
+            return 1;
+        }
+
+        return min($durationHours, $this->maxBookingDurationHours());
+    }
+
+    public function durationOptionsForStartSlot(string $timeSlot): array
+    {
+        $options = [];
+
+        for ($durationHours = 1; $durationHours <= $this->maxBookingDurationHours(); $durationHours++) {
+            if ($this->timeSlotsForDuration($timeSlot, $durationHours) === []) {
+                break;
+            }
+
+            $options[] = $durationHours;
+        }
+
+        return $options;
+    }
+
+    public function timeSlotsForDuration(string $timeSlot, int $durationHours = 1): array
+    {
+        $durationHours = $this->normalizeDurationHours($durationHours);
+        $timeSlots = $this->timeSlots();
+        $startIndex = array_search($timeSlot, $timeSlots, true);
+
+        if ($startIndex === false) {
+            return [];
+        }
+
+        $selectedSlots = [];
+        $previousSlotMinutes = null;
+
+        for ($index = $startIndex; $index < count($timeSlots) && count($selectedSlots) < $durationHours; $index++) {
+            $slot = $timeSlots[$index];
+            $slotMinutes = $this->timeToMinutes($slot);
+
+            if ($slotMinutes === null) {
+                return [];
+            }
+
+            if ($previousSlotMinutes !== null && $slotMinutes !== ($previousSlotMinutes + 60)) {
+                break;
+            }
+
+            $selectedSlots[] = $slot;
+            $previousSlotMinutes = $slotMinutes;
+        }
+
+        return count($selectedSlots) === $durationHours ? $selectedSlots : [];
+    }
+
+    public function occupiedTimeSlotsForReservation(Reservation $reservation): array
+    {
+        $occupiedSlots = $this->timeSlotsForDuration(
+            (string) $reservation->time_slot,
+            method_exists($reservation, 'durationHours')
+                ? $reservation->durationHours()
+                : (int) ($reservation->duration_hours ?? 1),
+        );
+
+        if ($occupiedSlots !== []) {
+            return $occupiedSlots;
+        }
+
+        return in_array((string) $reservation->time_slot, $this->timeSlots(), true)
+            ? [(string) $reservation->time_slot]
+            : [];
+    }
+
+    public function reservationOccupiesTimeSlot(Reservation $reservation, string $timeSlot): bool
+    {
+        return in_array($timeSlot, $this->occupiedTimeSlotsForReservation($reservation), true);
+    }
+
+    public function formatDurationLabel(int $durationHours): string
+    {
+        $durationHours = $this->normalizeDurationHours($durationHours);
+
+        return $durationHours . ' hour' . ($durationHours === 1 ? '' : 's');
+    }
+
+    public function formatReservationTimeRange(string $timeSlot, int $durationHours = 1): string
+    {
+        $occupiedSlots = $this->timeSlotsForDuration($timeSlot, $durationHours);
+
+        if ($occupiedSlots === []) {
+            return $timeSlot;
+        }
+
+        $lastSlot = $occupiedSlots[array_key_last($occupiedSlots)];
+        $lastSlotMinutes = $this->timeToMinutes($lastSlot);
+
+        if ($lastSlotMinutes === null) {
+            return $timeSlot;
+        }
+
+        $endTime = $this->minutesToTimeLabel($lastSlotMinutes + 60);
+
+        return $endTime === null
+            ? $timeSlot
+            : "{$occupiedSlots[0]} - {$endTime}";
+    }
+
     public function courtCount(): int
     {
         return FacilitySetting::currentCourtCount();
@@ -216,10 +331,20 @@ class ReservationManager
         int $oldPaddleRentQuantity = 0,
         int $newPaddleRentQuantity = 0,
         int $ballQuantity = 0,
+        int $durationHours = 1,
     ): int {
-        $courtRate = $timeSlot !== ''
-            ? $this->courtRateForTimeSlot($courtNumber, $timeSlot)
-            : $this->courtRate($courtNumber);
+        $selectedSlots = $timeSlot !== ''
+            ? $this->timeSlotsForDuration($timeSlot, $durationHours)
+            : [];
+
+        if ($selectedSlots !== []) {
+            $courtRate = collect($selectedSlots)
+                ->sum(fn (string $slot) => $this->courtRateForTimeSlot($courtNumber, $slot));
+        } else {
+            $courtRate = $timeSlot !== ''
+                ? $this->courtRateForTimeSlot($courtNumber, $timeSlot)
+                : $this->courtRate($courtNumber);
+        }
 
         return $courtRate + $this->calculateEquipmentTotal(
             $oldPaddleRentQuantity,
@@ -233,11 +358,12 @@ class ReservationManager
         $courtNumber = (int) ($attributes['court_number'] ?? 0);
         $court = $courtNumber > 0 ? $this->courtDetail($courtNumber) : null;
         $timeSlot = (string) ($attributes['time_slot'] ?? '');
+        $durationHours = $this->normalizeDurationHours($attributes['duration_hours'] ?? 1);
         $oldPaddleRentQuantity = $this->normalizeQuantity($attributes['paddle_rent_quantity'] ?? 0);
         $newPaddleRentQuantity = $this->normalizeQuantity($attributes['new_paddle_rent_quantity'] ?? 0);
         $ballQuantity = $this->normalizeQuantity($attributes['ball_quantity'] ?? 0);
 
-        return Reservation::create([
+        $payload = [
             ...$attributes,
             'court_name' => $attributes['court_name'] ?? ($court['name'] ?? null),
             'paddle_rent_quantity' => $oldPaddleRentQuantity,
@@ -245,11 +371,17 @@ class ReservationManager
             'ball_quantity' => $ballQuantity,
             'amount' => $attributes['amount'] ?? (
                 $courtNumber > 0 && $timeSlot !== ''
-                    ? $this->calculateReservationAmount($courtNumber, $timeSlot, $oldPaddleRentQuantity, $newPaddleRentQuantity, $ballQuantity)
+                    ? $this->calculateReservationAmount($courtNumber, $timeSlot, $oldPaddleRentQuantity, $newPaddleRentQuantity, $ballQuantity, $durationHours)
                     : (($court['day_rate'] ?? $court['rate'] ?? $this->reservationFee()) + $this->calculateEquipmentTotal($oldPaddleRentQuantity, $newPaddleRentQuantity, $ballQuantity))
             ),
             'receipt_no' => $attributes['receipt_no'] ?? $this->generateReceiptNumber(),
-        ]);
+        ];
+
+        if (Reservation::durationColumnReady()) {
+            $payload['duration_hours'] = $durationHours;
+        }
+
+        return Reservation::create($payload);
     }
 
     public function customerBookingWindowInDays(): int
@@ -262,16 +394,12 @@ class ReservationManager
         return now()->addDays($this->customerBookingWindowInDays())->startOfDay();
     }
 
-    public function findAvailableCourt(string $bookingDate, string $timeSlot): ?int
+    public function findAvailableCourt(string $bookingDate, string $timeSlot, int $durationHours = 1): ?int
     {
-        $existingBookings = Reservation::query()
-            ->whereDate('booking_date', $bookingDate)
-            ->where('time_slot', $timeSlot)
-            ->pluck('court_number')
-            ->all();
+        Reservation::expireStalePendingPayMongoReservations();
 
         for ($courtNumber = 1; $courtNumber <= $this->courtCount(); $courtNumber++) {
-            if (! in_array($courtNumber, $existingBookings, true)) {
+            if ($this->isCourtAvailable($bookingDate, $timeSlot, $courtNumber, null, $durationHours)) {
                 return $courtNumber;
             }
         }
@@ -279,22 +407,41 @@ class ReservationManager
         return null;
     }
 
-    public function isCourtAvailable(string $bookingDate, string $timeSlot, int $courtNumber, ?int $ignoreReservationId = null): bool
+    public function isCourtAvailable(
+        string $bookingDate,
+        string $timeSlot,
+        int $courtNumber,
+        ?int $ignoreReservationId = null,
+        int $durationHours = 1,
+    ): bool
     {
+        Reservation::expireStalePendingPayMongoReservations();
+
+        $requestedSlots = $this->timeSlotsForDuration($timeSlot, $durationHours);
+
+        if ($requestedSlots === []) {
+            return false;
+        }
+
         $query = Reservation::query()
             ->whereDate('booking_date', $bookingDate)
-            ->where('time_slot', $timeSlot)
             ->where('court_number', $courtNumber);
 
         if ($ignoreReservationId !== null) {
             $query->whereKeyNot($ignoreReservationId);
         }
 
-        return ! $query->exists();
+        return ! $query
+            ->get()
+            ->contains(function (Reservation $reservation) use ($requestedSlots) {
+                return array_intersect($requestedSlots, $this->occupiedTimeSlotsForReservation($reservation)) !== [];
+            });
     }
 
     public function maxReservedCourtForActiveReservations(): int
     {
+        Reservation::expireStalePendingPayMongoReservations();
+
         return (int) Reservation::query()
             ->whereDate('booking_date', '>=', now()->toDateString())
             ->max('court_number');
@@ -364,5 +511,19 @@ class ReservationManager
         }
 
         return ((int) $parsed->format('H')) * 60 + (int) $parsed->format('i');
+    }
+
+    private function minutesToTimeLabel(int $minutes): ?string
+    {
+        $normalizedMinutes = (($minutes % 1440) + 1440) % 1440;
+        $hours = intdiv($normalizedMinutes, 60);
+        $remainingMinutes = $normalizedMinutes % 60;
+        $parsed = \DateTime::createFromFormat('H:i', sprintf('%02d:%02d', $hours, $remainingMinutes));
+
+        if (! $parsed) {
+            return null;
+        }
+
+        return $parsed->format('g:i A');
     }
 }

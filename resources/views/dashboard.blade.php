@@ -2,7 +2,7 @@
     @php
         $heroTitle = $isAdmin ? 'Admin Dashboard' : 'My Dashboard';
         $heroLead = $isAdmin
-            ? 'Tan-awa ang reservations, income, courts, ug rates from one control center.'
+            ? 'Tan-awa ang live dashboard, reservations, income, courts, ug rates from one control center.'
             : 'Check your bookings, receipts, and rain reschedule updates in one clean view.';
         $heroKicker = $isAdmin ? 'Operations Hub' : 'Player Portal';
         $heroMetaLabel = $isAdmin ? 'Current report range' : 'Reschedule window';
@@ -11,6 +11,18 @@
         $heroFocusValue = $isAdmin
             ? \Illuminate\Support\Carbon::parse($selectedDate)->format('M d, Y')
             : 'Active member';
+        $adminPanel = $isAdmin ? request()->query('panel', 'analytics') : null;
+        if ($adminPanel === 'dashboard') {
+            $adminPanel = 'analytics';
+        }
+        if ($adminPanel === 'courts') {
+            $adminPanel = 'rates';
+        }
+        if ($isAdmin && ! in_array($adminPanel, ['income', 'analytics', 'monitor', 'rates', 'booking'], true)) {
+            $adminPanel = 'analytics';
+        }
+        $dashboardContainerClass = $isAdmin ? 'max-w-[1920px] 2xl:max-w-[2080px]' : 'max-w-7xl';
+        $showOverviewCards = ! $isAdmin || $adminPanel === 'income';
         $overviewCards = $isAdmin
             ? [
                 ['label' => 'Registered Users', 'value' => number_format($stats['registered_users'])],
@@ -98,7 +110,7 @@
     </x-slot>
 
     <div class="py-10">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto {{ $dashboardContainerClass }} space-y-6 px-4 sm:px-6 lg:px-8">
             @if(session('success'))
                 <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
                     {{ session('success') }}
@@ -122,7 +134,7 @@
             @endif
 
             <div class="glass-panel px-6 py-7 sm:px-8">
-                <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                <div class="flex flex-col gap-5">
                     <div class="max-w-3xl">
                         <p class="text-xs font-semibold uppercase tracking-[0.34em] text-sky-600">
                             {{ $isAdmin ? 'Control Center' : 'Matchday Flow' }}
@@ -135,52 +147,41 @@
                         </p>
                     </div>
 
-                    <div class="flex flex-wrap gap-3">
-                        @if($isAdmin)
-                            <a
-                                href="{{ route('admin.dashboard', ['panel' => 'monitor', 'date' => $selectedDate, 'start_date' => $reportStartDate, 'end_date' => $reportEndDate]) }}"
-                                class="accent-link border-slate-900 bg-slate-900 text-white hover:border-sky-600 hover:bg-sky-600"
-                            >
-                                Open Monitor
-                            </a>
-                            <a
-                                href="{{ route('admin.dashboard', ['panel' => 'income', 'date' => $selectedDate, 'start_date' => $reportStartDate, 'end_date' => $reportEndDate]) }}"
-                                class="accent-link border-slate-200 bg-white text-slate-700 hover:border-sky-200 hover:text-sky-700"
-                            >
-                                View Income
-                            </a>
-                        @else
+                    @unless($isAdmin)
+                        <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                             <a
                                 href="{{ route('reservations.index') }}"
-                                class="accent-link border-slate-900 bg-slate-900 text-white hover:border-sky-600 hover:bg-sky-600"
+                                class="accent-link w-full border-slate-900 bg-slate-900 text-white hover:border-sky-600 hover:bg-sky-600 sm:w-auto"
                             >
-                                Book Another Slot
+                                Book Now
                             </a>
                             <a
                                 href="{{ route('profile.edit') }}"
-                                class="accent-link border-slate-200 bg-white text-slate-700 hover:border-sky-200 hover:text-sky-700"
+                                class="accent-link w-full border-slate-200 bg-white text-slate-700 hover:border-sky-200 hover:text-sky-700 sm:w-auto"
                             >
                                 Manage Profile
                             </a>
-                        @endif
-                    </div>
+                        </div>
+                    @endunless
                 </div>
             </div>
 
-            <div class="grid gap-4 {{ $isAdmin ? 'md:grid-cols-2 xl:grid-cols-5' : 'md:grid-cols-2 xl:grid-cols-4' }}">
-                @foreach($overviewCards as $card)
-                    <div class="stat-card">
-                        <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">{{ $card['label'] }}</p>
-                        <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ $card['value'] }}</p>
-                    </div>
-                @endforeach
-            </div>
+            @if($showOverviewCards)
+                <div class="grid gap-4 {{ $isAdmin ? 'md:grid-cols-2 xl:grid-cols-5' : 'md:grid-cols-2 xl:grid-cols-4' }}">
+                    @foreach($overviewCards as $card)
+                        <div class="stat-card">
+                            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">{{ $card['label'] }}</p>
+                            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ $card['value'] }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
 
             @if(! $isAdmin)
                 <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-                    <p class="font-semibold">No cancellation once paid or reserved.</p>
+                    <p class="font-semibold">No cancellation once a booking is confirmed.</p>
                     <p class="mt-2">
-                        If mag-ulan and dili magamit ang court because walay atop, admin ra ang maka-unlock sa imong reschedule.
+                        If rain or uncovered court conditions affect play, only the admin can unlock your reservation for reschedule.
                         Once unlocked, you can choose a new date, court, and time within {{ $customerBookingWindowDays }} days from the original booking date.
                     </p>
                     @if(! $rescheduleFeatureReady)
@@ -216,7 +217,7 @@
                                         <div>
                                             <p class="text-sm font-semibold text-indigo-700 dark:text-indigo-300">{{ $reservation->receipt_no }}</p>
                                             <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">
-                                                Current schedule: {{ $reservation->booking_date->format('M d, Y') }} at {{ $reservation->time_slot }}, {{ $resolveCourtLabel($reservation->court_number, $reservation->court_name) }}
+                                                Current schedule: {{ $reservation->booking_date->format('M d, Y') }} at {{ $reservation->timeRangeLabel() }}, {{ $resolveCourtLabel($reservation->court_number, $reservation->court_name) }} ({{ $reservation->durationLabel() }})
                                             </p>
                                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                                 Unlock reason: {{ $reservation->reschedule_reason ?? 'Rain / uncovered court' }}
@@ -262,7 +263,7 @@
                                         </div>
 
                                         <div>
-                                            <label for="reschedule_time_{{ $reservation->id }}" class="block text-sm font-medium text-gray-700 dark:text-gray-200">New time slot</label>
+                                            <label for="reschedule_time_{{ $reservation->id }}" class="block text-sm font-medium text-gray-700 dark:text-gray-200">New start time</label>
                                             <select
                                                 id="reschedule_time_{{ $reservation->id }}"
                                                 name="time_slot"
@@ -287,17 +288,6 @@
             @endif
 
             @if($isAdmin)
-                @php
-                    $adminPanel = request()->query('panel', 'monitor');
-                    if ($adminPanel === 'courts') {
-                        $adminPanel = 'rates';
-                    }
-
-                    if (! in_array($adminPanel, ['income', 'monitor', 'rates', 'booking'], true)) {
-                        $adminPanel = 'monitor';
-                        }
-                    @endphp
-
                 <div class="space-y-6">
                         @if($adminPanel === 'income')
                             <div class="glass-panel p-6">
@@ -401,6 +391,640 @@
                                     </div>
                                 </div>
                             </div>
+                        @elseif($adminPanel === 'analytics')
+                            @php
+                                $maxDailyBookings = max(1, (int) ($analyticsSummary['max_daily_bookings'] ?? 0));
+                                $hasAnalyticsBookings = ($analyticsSummary['max_daily_bookings'] ?? 0) > 0;
+                                $analyticsTotalBookings = max(1, (int) ($stats['range_bookings'] ?? 0));
+                                $paidBookingPercentage = (int) round((($analyticsSummary['paid_bookings'] ?? 0) / $analyticsTotalBookings) * 100);
+                                $walkInPercentage = (int) round((($analyticsSummary['walk_in_bookings'] ?? 0) / $analyticsTotalBookings) * 100);
+                                $memberBookingPercentage = (int) round((($analyticsSummary['member_bookings'] ?? 0) / $analyticsTotalBookings) * 100);
+                                $pendingBookingPercentage = (int) round((($analyticsSummary['pending_or_unpaid_bookings'] ?? 0) / $analyticsTotalBookings) * 100);
+                                $topCourtMaxBookings = max(1, (int) $analyticsTopCourts->max('booking_count'));
+                                $topIncomeDays = $analyticsSeries
+                                    ->sortByDesc('paid_income')
+                                    ->take(5)
+                                    ->values();
+                                $dashboardSummaryCards = [
+                                    [
+                                        'label' => 'Visitors',
+                                        'value' => number_format($stats['range_unique_visitors']),
+                                        'note' => 'Unique customers in the selected range.',
+                                        'subnote' => number_format($stats['range_repeat_customers']) . ' returning customer' . ($stats['range_repeat_customers'] === 1 ? '' : 's'),
+                                        'panel' => 'bg-[linear-gradient(135deg,#0f172a_0%,#1d4ed8_55%,#38bdf8_100%)] text-white',
+                                        'accent' => 'text-sky-100/90',
+                                        'badge' => 'Live traffic',
+                                    ],
+                                    [
+                                        'label' => 'Users',
+                                        'value' => number_format($stats['registered_users']),
+                                        'note' => 'Registered member accounts in the system.',
+                                        'subnote' => number_format($analyticsSummary['member_bookings']) . ' member bookings inside this range',
+                                        'panel' => 'bg-[linear-gradient(135deg,#111827_0%,#334155_55%,#64748b_100%)] text-white',
+                                        'accent' => 'text-slate-200/90',
+                                        'badge' => 'Members',
+                                    ],
+                                    [
+                                        'label' => 'Booking',
+                                        'value' => number_format($stats['range_bookings']),
+                                        'note' => 'Total reservations recorded for this dashboard view.',
+                                        'subnote' => number_format($analyticsSummary['average_bookings_per_day'], 1) . ' average bookings per day',
+                                        'panel' => 'bg-[linear-gradient(135deg,#0f766e_0%,#10b981_55%,#6ee7b7_100%)] text-white',
+                                        'accent' => 'text-emerald-100/90',
+                                        'badge' => 'Reservations',
+                                    ],
+                                    [
+                                        'label' => 'Repeat Booking',
+                                        'value' => number_format($stats['range_repeat_bookings']),
+                                        'note' => 'Extra bookings created by returning customers.',
+                                        'subnote' => number_format($stats['range_walk_in_reservations']) . ' walk-in bookings in this range',
+                                        'panel' => 'bg-[linear-gradient(135deg,#7c2d12_0%,#ea580c_52%,#fdba74_100%)] text-white',
+                                        'accent' => 'text-orange-100/90',
+                                        'badge' => 'Retention',
+                                    ],
+                                ];
+                                $dashboardProgressRows = [
+                                    [
+                                        'label' => 'Paid bookings',
+                                        'value' => $analyticsSummary['paid_bookings'],
+                                        'total' => $stats['range_bookings'],
+                                        'width' => $paidBookingPercentage,
+                                        'bar' => 'bg-blue-500',
+                                    ],
+                                    [
+                                        'label' => 'Member bookings',
+                                        'value' => $analyticsSummary['member_bookings'],
+                                        'total' => $stats['range_bookings'],
+                                        'width' => $memberBookingPercentage,
+                                        'bar' => 'bg-slate-800',
+                                    ],
+                                    [
+                                        'label' => 'Walk-in bookings',
+                                        'value' => $analyticsSummary['walk_in_bookings'],
+                                        'total' => $stats['range_bookings'],
+                                        'width' => $walkInPercentage,
+                                        'bar' => 'bg-emerald-500',
+                                    ],
+                                    [
+                                        'label' => 'Pending / unpaid',
+                                        'value' => $analyticsSummary['pending_or_unpaid_bookings'],
+                                        'total' => $stats['range_bookings'],
+                                        'width' => $pendingBookingPercentage,
+                                        'bar' => 'bg-amber-400',
+                                    ],
+                                ];
+                                $dashboardSignalCards = [
+                                    [
+                                        'label' => 'Average / day',
+                                        'value' => number_format($analyticsSummary['average_bookings_per_day'], 1),
+                                        'note' => 'Booking count across the selected range.',
+                                        'panel' => 'bg-amber-400 text-slate-950',
+                                        'accent' => 'text-amber-950/70',
+                                    ],
+                                    [
+                                        'label' => 'Peak booking day',
+                                        'value' => data_get($analyticsPeakBookingDay, 'date') ? $analyticsPeakBookingDay['date']->format('M d, Y') : 'No data yet',
+                                        'note' => number_format((int) data_get($analyticsPeakBookingDay, 'booking_count', 0)) . ' bookings on the busiest day.',
+                                        'panel' => 'bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 text-white',
+                                        'accent' => 'text-blue-100',
+                                    ],
+                                    [
+                                        'label' => 'Best income day',
+                                        'value' => data_get($analyticsPeakIncomeDay, 'date') ? $analyticsPeakIncomeDay['date']->format('M d, Y') : 'No income yet',
+                                        'note' => 'PHP ' . number_format((float) data_get($analyticsPeakIncomeDay, 'paid_income', 0), 2) . ' paid income on the strongest day.',
+                                        'panel' => 'bg-gradient-to-br from-emerald-500 via-teal-600 to-emerald-700 text-white',
+                                        'accent' => 'text-emerald-100',
+                                    ],
+                                    [
+                                        'label' => 'Days analyzed',
+                                        'value' => number_format($analyticsSummary['range_days']),
+                                        'note' => 'Custom dashboard reporting window.',
+                                        'panel' => 'bg-gradient-to-br from-slate-800 via-slate-700 to-slate-600 text-white',
+                                        'accent' => 'text-slate-200',
+                                    ],
+                                ];
+                                $recentDashboardBookings = $reservations
+                                    ->take(8)
+                                    ->map(fn ($reservation) => [
+                                        'name' => $reservation->customer_name,
+                                        'date' => $reservation->booking_date,
+                                        'schedule' => $reservation->timeRangeLabel(),
+                                        'court' => $resolveCourtLabel($reservation->court_number, $reservation->court_name),
+                                        'payment_status' => $reservation->payment_status,
+                                        'receipt_no' => $reservation->receipt_no,
+                                    ])
+                                    ->take(8)
+                                    ->values();
+                                $chartPointCount = max(1, $analyticsSeries->count());
+                                $chartWidth = max(980, $chartPointCount * 122);
+                                $chartHeight = 290;
+                                $chartBottom = 242;
+                                $chartPlotHeight = 178;
+                                $maxPaidIncome = max(1, (float) $analyticsSeries->max('paid_income'));
+                                $bookingPolylinePoints = $analyticsSeries
+                                    ->values()
+                                    ->map(function (array $day, int $index) use ($chartPointCount, $chartWidth, $chartBottom, $chartPlotHeight, $maxDailyBookings) {
+                                        $x = $chartPointCount > 1
+                                            ? 32 + (($chartWidth - 64) / ($chartPointCount - 1)) * $index
+                                            : $chartWidth / 2;
+                                        $y = $chartBottom - (($day['booking_count'] / $maxDailyBookings) * $chartPlotHeight);
+
+                                        return number_format($x, 2, '.', '') . ',' . number_format($y, 2, '.', '');
+                                    })
+                                    ->implode(' ');
+                                $incomePolylinePoints = $analyticsSeries
+                                    ->values()
+                                    ->map(function (array $day, int $index) use ($chartPointCount, $chartWidth, $chartBottom, $chartPlotHeight, $maxPaidIncome) {
+                                        $x = $chartPointCount > 1
+                                            ? 32 + (($chartWidth - 64) / ($chartPointCount - 1)) * $index
+                                            : $chartWidth / 2;
+                                        $y = $chartBottom - (($day['paid_income'] / $maxPaidIncome) * $chartPlotHeight);
+
+                                        return number_format($x, 2, '.', '') . ',' . number_format($y, 2, '.', '');
+                                    })
+                                    ->implode(' ');
+                                $chartGridLines = collect([0, 25, 50, 75, 100]);
+                                $courtSharePalette = ['#2563eb', '#0f766e', '#f59e0b', '#0f172a', '#7c3aed'];
+                                $courtShareLegend = [];
+                                $currentAngle = 0;
+
+                                foreach ($analyticsTopCourts as $index => $court) {
+                                    $percentage = $stats['range_bookings'] > 0
+                                        ? round(($court['booking_count'] / $stats['range_bookings']) * 100, 1)
+                                        : 0;
+                                    $angle = ($percentage / 100) * 360;
+
+                                    if ($angle <= 0) {
+                                        continue;
+                                    }
+
+                                    $color = $courtSharePalette[$index % count($courtSharePalette)];
+                                    $courtShareLegend[] = [
+                                        'label' => $court['label'],
+                                        'percentage' => $percentage,
+                                        'booking_count' => $court['booking_count'],
+                                        'color' => $color,
+                                    ];
+                                    $currentAngle += $angle;
+                                }
+
+                                if ($stats['range_bookings'] > 0 && $currentAngle < 360) {
+                                    $othersPercentage = max(0, round((($stats['range_bookings'] - $analyticsTopCourts->sum('booking_count')) / $stats['range_bookings']) * 100, 1));
+                                    if ($othersPercentage > 0) {
+                                        $courtShareLegend[] = [
+                                            'label' => 'Others',
+                                            'percentage' => $othersPercentage,
+                                            'booking_count' => max(0, $stats['range_bookings'] - $analyticsTopCourts->sum('booking_count')),
+                                            'color' => '#cbd5e1',
+                                        ];
+                                    }
+                                }
+
+                                $donutRadius = 78;
+                                $donutCircumference = 2 * pi() * $donutRadius;
+                                $donutGapLength = 8;
+                                $donutOffset = 0.0;
+                                $donutSegments = collect($courtShareLegend)
+                                    ->map(function (array $courtShare) use (&$donutOffset, $donutCircumference, $donutGapLength) {
+                                        $rawLength = ($courtShare['percentage'] / 100) * $donutCircumference;
+                                        $segment = [
+                                            'label' => $courtShare['label'],
+                                            'color' => $courtShare['color'],
+                                            'percentage' => $courtShare['percentage'],
+                                            'booking_count' => $courtShare['booking_count'],
+                                            'length' => max(0, $rawLength - $donutGapLength),
+                                            'offset' => $donutOffset,
+                                        ];
+
+                                        $donutOffset += $rawLength;
+
+                                        return $segment;
+                                    })
+                                    ->filter(fn (array $segment) => $segment['length'] > 0)
+                                    ->values();
+                                $topCourtShare = $donutSegments->first();
+                            @endphp
+
+                            <div class="space-y-6">
+                                <div class="glass-panel relative overflow-hidden p-6 sm:p-8">
+                                    <div class="pointer-events-none absolute -left-10 top-0 h-40 w-40 rounded-full bg-sky-300/20 blur-3xl"></div>
+                                    <div class="pointer-events-none absolute right-0 top-8 h-40 w-40 rounded-full bg-amber-200/25 blur-3xl"></div>
+
+                                    <div class="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+                                        <div class="max-w-2xl">
+                                            <p class="text-xs font-semibold uppercase tracking-[0.34em] text-sky-600">Booking Analytics</p>
+                                            <h3 class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Dashboard</h3>
+                                            <p class="mt-3 text-sm leading-7 text-slate-600">
+                                                Top summary cards show the key counts first, then the deeper booking analytics stay visible below for daily monitoring.
+                                            </p>
+                                            <p class="mt-3 inline-flex rounded-full border border-sky-100 bg-sky-50/85 px-4 py-2 text-sm font-medium text-sky-700">
+                                                Dashboard range: {{ $reportRangeLabel }}
+                                            </p>
+                                        </div>
+
+                                        <div class="flex flex-wrap gap-2">
+                                            @foreach($quickRanges as $range)
+                                                <a
+                                                    href="{{ route('admin.dashboard', ['panel' => 'analytics', 'date' => $range['date'], 'start_date' => $range['start_date'], 'end_date' => $range['end_date']]) }}"
+                                                    class="inline-flex items-center rounded-full border border-sky-100 bg-white/90 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+                                                >
+                                                    {{ $range['label'] }}
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    </div>
+
+                                    <form method="GET" action="{{ $dashboardRoute }}" class="relative mt-8 grid gap-4 rounded-[2rem] border border-sky-100 bg-slate-50/90 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
+                                        <input type="hidden" name="panel" value="analytics">
+                                        <input type="hidden" name="date" value="{{ $selectedDate }}">
+
+                                        <div>
+                                            <label for="analytics_start_date" class="block text-sm font-medium text-slate-700">Start date</label>
+                                            <input
+                                                id="analytics_start_date"
+                                                name="start_date"
+                                                type="date"
+                                                value="{{ $reportStartDate }}"
+                                                class="mt-2 w-full rounded-2xl border border-sky-100 bg-white shadow-sm focus:border-sky-400 focus:ring-sky-400"
+                                            >
+                                        </div>
+
+                                        <div>
+                                            <label for="analytics_end_date" class="block text-sm font-medium text-slate-700">End date</label>
+                                            <input
+                                                id="analytics_end_date"
+                                                name="end_date"
+                                                type="date"
+                                                value="{{ $reportEndDate }}"
+                                                class="mt-2 w-full rounded-2xl border border-sky-100 bg-white shadow-sm focus:border-sky-400 focus:ring-sky-400"
+                                            >
+                                        </div>
+
+                                        <div class="flex items-end">
+                                            <x-primary-button>Refresh Dashboard</x-primary-button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <div class="grid gap-5 md:grid-cols-2 2xl:grid-cols-4">
+                                    @foreach($dashboardSummaryCards as $summaryCard)
+                                        <div class="{{ $summaryCard['panel'] }} relative overflow-hidden rounded-[2rem] px-6 py-6 shadow-[0_22px_60px_rgba(15,23,42,0.16)]">
+                                            <div class="pointer-events-none absolute -right-8 top-0 h-28 w-28 rounded-full bg-white/10 blur-2xl"></div>
+                                            <div class="pointer-events-none absolute bottom-0 left-0 h-24 w-24 rounded-full bg-black/10 blur-2xl"></div>
+
+                                            <div class="relative flex h-full flex-col">
+                                                <div class="flex items-start justify-between gap-4">
+                                                    <div>
+                                                        <p class="text-[0.68rem] font-semibold uppercase tracking-[0.3em] {{ $summaryCard['accent'] }}">{{ $summaryCard['badge'] }}</p>
+                                                        <p class="mt-3 text-sm font-medium {{ $summaryCard['accent'] }}">{{ $summaryCard['label'] }}</p>
+                                                    </div>
+                                                    <span class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
+                                                        @if($summaryCard['label'] === 'Visitors')
+                                                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                                <path d="M17 21V19C17 17.3431 15.6569 16 14 16H8C6.34315 16 5 17.3431 5 19V21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                                                <circle cx="11" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>
+                                                            </svg>
+                                                        @elseif($summaryCard['label'] === 'Users')
+                                                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                                <path d="M16 21V19C16 17.3431 14.6569 16 13 16H7C5.34315 16 4 17.3431 4 19V21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                                                <circle cx="10" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/>
+                                                                <path d="M20 21V19.5C20 18.1193 18.8807 17 17.5 17H17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                                            </svg>
+                                                        @elseif($summaryCard['label'] === 'Booking')
+                                                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                                <path d="M7 3V6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                                                <path d="M17 3V6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                                                <rect x="4" y="5" width="16" height="15" rx="2.5" stroke="currentColor" stroke-width="1.8"/>
+                                                                <path d="M4 10H20" stroke="currentColor" stroke-width="1.8"/>
+                                                            </svg>
+                                                        @else
+                                                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                                <path d="M6 15L10 11L13 14L19 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                                                <path d="M16 8H19V11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                                            </svg>
+                                                        @endif
+                                                    </span>
+                                                </div>
+
+                                                <p class="mt-8 text-5xl font-semibold tracking-tight">{{ $summaryCard['value'] }}</p>
+                                                <p class="mt-4 text-sm leading-7 {{ $summaryCard['accent'] }}">{{ $summaryCard['note'] }}</p>
+                                                <div class="mt-6 rounded-[1.35rem] border border-white/10 bg-white/10 px-4 py-3 text-xs uppercase tracking-[0.22em] {{ $summaryCard['accent'] }}">
+                                                    {{ $summaryCard['subnote'] }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                <div class="grid gap-6 lg:grid-cols-[minmax(0,1.62fr)_minmax(360px,0.96fr)] 2xl:grid-cols-[minmax(0,1.62fr)_minmax(420px,0.9fr)]">
+                                    <div class="glass-panel p-6">
+                                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                            <div>
+                                                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Daily Booking Trend</h3>
+                                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                    Monthly recap report for bookings and paid income across the selected range.
+                                                </p>
+                                            </div>
+                                            <div class="rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-700 dark:bg-gray-900 dark:text-gray-200">
+                                                Peak day:
+                                                <span class="font-semibold">
+                                                    {{ data_get($analyticsPeakBookingDay, 'date') ? $analyticsPeakBookingDay['date']->format('M d, Y') : 'N/A' }}
+                                                </span>
+                                                | {{ number_format((int) data_get($analyticsPeakBookingDay, 'booking_count', 0)) }} bookings
+                                            </div>
+                                        </div>
+
+                                        @if($hasAnalyticsBookings)
+                                            <div class="mt-6 overflow-x-auto">
+                                                <div class="min-w-max rounded-3xl border border-sky-100 bg-white/95 p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900/30" style="min-width: {{ $chartWidth }}px;">
+                                                    <div class="flex items-center gap-5 px-3 pb-4 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                                                        <span class="inline-flex items-center gap-2">
+                                                            <span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                                            Bookings
+                                                        </span>
+                                                        <span class="inline-flex items-center gap-2">
+                                                            <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                                                            Paid income
+                                                        </span>
+                                                    </div>
+
+                                                    <svg viewBox="0 0 {{ $chartWidth }} {{ $chartHeight }}" class="h-[220px] w-full sm:h-[250px] lg:h-[280px]">
+                                                        @foreach($chartGridLines as $gridLine)
+                                                            @php
+                                                                $y = $chartBottom - (($gridLine / 100) * $chartPlotHeight);
+                                                            @endphp
+                                                            <line x1="24" y1="{{ $y }}" x2="{{ $chartWidth - 24 }}" y2="{{ $y }}" stroke="#e2e8f0" stroke-width="1" />
+                                                        @endforeach
+
+                                                        <polyline
+                                                            fill="none"
+                                                            stroke="#10b981"
+                                                            stroke-width="4"
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            points="{{ $incomePolylinePoints }}"
+                                                        />
+
+                                                        <polyline
+                                                            fill="none"
+                                                            stroke="#2563eb"
+                                                            stroke-width="4"
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            points="{{ $bookingPolylinePoints }}"
+                                                        />
+
+                                                        @foreach($analyticsSeries->values() as $index => $day)
+                                                            @php
+                                                                $x = $chartPointCount > 1
+                                                                    ? 32 + (($chartWidth - 64) / ($chartPointCount - 1)) * $index
+                                                                    : $chartWidth / 2;
+                                                                $bookingY = $chartBottom - (($day['booking_count'] / $maxDailyBookings) * $chartPlotHeight);
+                                                                $incomeY = $chartBottom - (($day['paid_income'] / $maxPaidIncome) * $chartPlotHeight);
+                                                            @endphp
+                                                            <circle cx="{{ $x }}" cy="{{ $bookingY }}" r="4.5" fill="#2563eb" />
+                                                            <circle cx="{{ $x }}" cy="{{ $incomeY }}" r="4.5" fill="#10b981" />
+                                                        @endforeach
+                                                    </svg>
+
+                                                    <div class="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+                                                        @foreach($analyticsSeries as $day)
+                                                            <div class="rounded-2xl bg-slate-50 px-3 py-3 text-center dark:bg-gray-950/40">
+                                                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{{ $day['date']->format('D') }}</p>
+                                                                <p class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{{ $day['date']->format('M d') }}</p>
+                                                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $day['booking_count'] }} bookings</p>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <div class="mt-6 rounded-3xl border border-dashed border-gray-300 bg-gray-50 px-6 py-10 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900/30 dark:text-gray-400">
+                                                No bookings found in this range yet. Try another date range to generate the graph.
+                                            </div>
+                                        @endif
+
+                                        <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                                            <div class="rounded-3xl border border-sky-100 bg-sky-50/75 px-5 py-4 dark:border-gray-700 dark:bg-gray-900/40">
+                                                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Total revenue</p>
+                                                <p class="mt-3 text-2xl font-semibold text-slate-950 dark:text-white">PHP {{ number_format($stats['range_paid_income'], 2) }}</p>
+                                                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Collected within the active reporting range.</p>
+                                            </div>
+                                            <div class="rounded-3xl border border-emerald-100 bg-emerald-50/80 px-5 py-4 dark:border-gray-700 dark:bg-gray-900/40">
+                                                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Member mix</p>
+                                                <p class="mt-3 text-2xl font-semibold text-slate-950 dark:text-white">{{ $memberBookingPercentage }}%</p>
+                                                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ $analyticsSummary['member_bookings'] }} member bookings in this dashboard range.</p>
+                                            </div>
+                                            <div class="rounded-3xl border border-amber-100 bg-amber-50/80 px-5 py-4 dark:border-gray-700 dark:bg-gray-900/40">
+                                                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Walk-in mix</p>
+                                                <p class="mt-3 text-2xl font-semibold text-slate-950 dark:text-white">{{ $walkInPercentage }}%</p>
+                                                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ $analyticsSummary['walk_in_bookings'] }} walk-in bookings inside the same period.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-6">
+                                        <div class="glass-panel p-6">
+                                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Court Share Donut Chart</h3>
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Large donut view of which courts are absorbing the booking demand inside this dashboard range.
+                                            </p>
+
+                                            <div class="mt-6 grid gap-6 xl:grid-cols-[250px_minmax(0,1fr)] xl:items-center">
+                                                <div class="flex items-center justify-center">
+                                                    <div class="relative h-64 w-64">
+                                                        <svg viewBox="0 0 220 220" class="h-full w-full -rotate-90 drop-shadow-[0_12px_30px_rgba(37,99,235,0.14)]">
+                                                            <circle cx="110" cy="110" r="{{ $donutRadius }}" fill="none" stroke="#e2e8f0" stroke-width="26" />
+                                                            @foreach($donutSegments as $segment)
+                                                                <circle
+                                                                    cx="110"
+                                                                    cy="110"
+                                                                    r="{{ $donutRadius }}"
+                                                                    fill="none"
+                                                                    stroke="{{ $segment['color'] }}"
+                                                                    stroke-width="26"
+                                                                    stroke-linecap="round"
+                                                                    stroke-dasharray="{{ number_format($segment['length'], 2, '.', '') }} {{ number_format($donutCircumference, 2, '.', '') }}"
+                                                                    stroke-dashoffset="-{{ number_format($segment['offset'], 2, '.', '') }}"
+                                                                />
+                                                            @endforeach
+                                                        </svg>
+
+                                                        <div class="absolute inset-0 flex items-center justify-center">
+                                                            <div class="text-center">
+                                                                <p class="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-slate-400">Top Court</p>
+                                                                <p class="mt-2 text-lg font-semibold text-slate-950 dark:text-white">{{ data_get($topCourtShare, 'label', 'No data yet') }}</p>
+                                                                <p class="mt-2 text-3xl font-semibold text-slate-950 dark:text-white">{{ data_get($topCourtShare, 'percentage', 0) }}%</p>
+                                                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ number_format($stats['range_bookings']) }} bookings total</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="space-y-3">
+                                                    @forelse($donutSegments as $segment)
+                                                        <div class="rounded-2xl border border-sky-100 bg-sky-50/75 px-4 py-4 dark:border-gray-700 dark:bg-gray-900/40">
+                                                            <div class="flex items-center justify-between gap-3">
+                                                                <div class="flex items-center gap-3">
+                                                                    <span class="h-3 w-3 rounded-full" style="background-color: {{ $segment['color'] }}"></span>
+                                                                    <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $segment['label'] }}</p>
+                                                                </div>
+                                                                <span class="text-sm font-semibold text-slate-600 dark:text-slate-300">{{ $segment['percentage'] }}%</span>
+                                                            </div>
+                                                            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">{{ $segment['booking_count'] }} bookings in range</p>
+                                                        </div>
+                                                    @empty
+                                                        <div class="rounded-3xl border border-dashed border-sky-200 px-4 py-8 text-center text-sm text-slate-500 dark:border-gray-700 dark:text-slate-400">
+                                                            No court-share data yet for this range.
+                                                        </div>
+                                                    @endforelse
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="glass-panel p-6">
+                                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Demand Snapshot</h3>
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Goal-completion style view of booking mix and demand progress for the current range.
+                                            </p>
+
+                                            <div class="mt-5 space-y-4">
+                                                @foreach($dashboardProgressRows as $progressRow)
+                                                    <div>
+                                                        <div class="flex items-center justify-between gap-3">
+                                                            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ $progressRow['label'] }}</p>
+                                                            <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $progressRow['value'] }} / {{ $progressRow['total'] }}</span>
+                                                        </div>
+                                                        <div class="mt-2 h-3 rounded-full bg-gray-100 dark:bg-gray-800">
+                                                            <div class="h-3 rounded-full {{ $progressRow['bar'] }}" style="width: {{ min(100, max(0, $progressRow['width'])) }}%;"></div>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+
+                                            <div class="mt-6 space-y-3">
+                                                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-400">Top Courts</p>
+                                                @forelse($analyticsTopCourts as $court)
+                                                    @php
+                                                        $courtWidth = max(14, (int) round(($court['booking_count'] / $topCourtMaxBookings) * 100));
+                                                    @endphp
+                                                    <div class="rounded-2xl border border-sky-100 bg-slate-50 px-4 py-4 dark:border-gray-700 dark:bg-gray-900/40">
+                                                        <div class="flex items-center justify-between gap-3">
+                                                            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $court['label'] }}</p>
+                                                            <span class="text-xs font-medium uppercase tracking-[0.2em] text-gray-400">{{ $court['booking_count'] }} bookings</span>
+                                                        </div>
+                                                        <div class="mt-3 h-2 rounded-full bg-gray-200 dark:bg-gray-800">
+                                                            <div class="h-2 rounded-full bg-indigo-500" style="width: {{ $courtWidth }}%;"></div>
+                                                        </div>
+                                                        <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                                                            Paid income: PHP {{ number_format($court['paid_income'], 2) }}
+                                                        </p>
+                                                    </div>
+                                                @empty
+                                                    <div class="rounded-2xl border border-dashed border-sky-200 px-4 py-5 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                                                        No court demand data yet for this range.
+                                                    </div>
+                                                @endforelse
+                                            </div>
+                                        </div>
+
+                                        <div class="glass-panel p-6">
+                                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Dashboard Signals</h3>
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Fast reads for the team before jumping into bookings, monitor, or rates.
+                                            </p>
+
+                                            <div class="mt-5 space-y-3">
+                                                @foreach($dashboardSignalCards as $signalCard)
+                                                    <div class="{{ $signalCard['panel'] }} rounded-3xl px-5 py-4 shadow-sm">
+                                                        <p class="text-xs font-semibold uppercase tracking-[0.24em] {{ $signalCard['accent'] }}">{{ $signalCard['label'] }}</p>
+                                                        <p class="mt-3 text-lg font-semibold">{{ $signalCard['value'] }}</p>
+                                                        <p class="mt-2 text-sm {{ $signalCard['accent'] }}">{{ $signalCard['note'] }}</p>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="grid gap-6 lg:grid-cols-[minmax(0,1.18fr)_minmax(0,0.82fr)]">
+                                    <div class="glass-panel p-6">
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                            <div>
+                                                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Booking Names</h3>
+                                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                    Quick customer view for {{ \Illuminate\Support\Carbon::parse($selectedDate)->format('M d, Y') }} so the front desk can spot today's bookings fast.
+                                                </p>
+                                            </div>
+                                            <div class="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-700 dark:bg-gray-900 dark:text-gray-200">
+                                                {{ $recentDashboardBookings->count() }} customer highlight{{ $recentDashboardBookings->count() === 1 ? '' : 's' }}
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-4">
+                                            @forelse($recentDashboardBookings as $bookingHighlight)
+                                                <div class="rounded-3xl border border-sky-100 bg-white/95 px-4 py-4 shadow-sm dark:border-gray-700 dark:bg-gray-900/40">
+                                                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
+                                                        {{ \Illuminate\Support\Str::of($bookingHighlight['name'])->explode(' ')->map(fn ($part) => \Illuminate\Support\Str::substr($part, 0, 1))->take(2)->implode('') }}
+                                                    </div>
+                                                    <p class="mt-4 text-sm font-semibold text-slate-950 dark:text-white">{{ $bookingHighlight['name'] }}</p>
+                                                    <p class="mt-1 text-xs uppercase tracking-[0.2em] text-slate-400">{{ $bookingHighlight['date']->format('M d, Y') }}</p>
+                                                    <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                                                        {{ $bookingHighlight['schedule'] }}<br>
+                                                        {{ $bookingHighlight['court'] }}
+                                                        <br>
+                                                        {{ $bookingHighlight['payment_status'] }} | {{ $bookingHighlight['receipt_no'] }}
+                                                    </p>
+                                                </div>
+                                            @empty
+                                                <div class="sm:col-span-2 lg:col-span-2 2xl:col-span-4 rounded-3xl border border-dashed border-sky-200 px-4 py-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                                                    No customer names are available in this dashboard range yet.
+                                                </div>
+                                            @endforelse
+                                        </div>
+                                    </div>
+
+                                    <div class="glass-panel p-6">
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Revenue Pulse</h3>
+                                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                            Highest paid-income days within the selected date range.
+                                        </p>
+
+                                        <div class="mt-5 overflow-hidden rounded-3xl border border-sky-100 dark:border-gray-700">
+                                            <div class="overflow-x-auto">
+                                                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                                    <thead class="bg-sky-50/85 dark:bg-gray-900/60">
+                                                        <tr>
+                                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Date</th>
+                                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Revenue</th>
+                                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Bookings</th>
+                                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Mix</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
+                                                        @forelse($topIncomeDays as $day)
+                                                            <tr>
+                                                                <td class="px-4 py-4 text-sm font-medium text-slate-900 dark:text-white">{{ $day['date']->format('M d, Y') }}</td>
+                                                                <td class="px-4 py-4 text-sm text-emerald-600 dark:text-emerald-300">PHP {{ number_format($day['paid_income'], 2) }}</td>
+                                                                <td class="px-4 py-4 text-sm text-slate-600 dark:text-slate-300">{{ $day['booking_count'] }}</td>
+                                                                <td class="px-4 py-4 text-sm text-slate-500 dark:text-slate-400">
+                                                                    {{ $day['member_booking_count'] }} member | {{ $day['walk_in_count'] }} walk-in
+                                                                </td>
+                                                            </tr>
+                                                        @empty
+                                                            <tr>
+                                                                <td colspan="4" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                                                                    No paid income data yet for this range.
+                                                                </td>
+                                                            </tr>
+                                                        @endforelse
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         @elseif($adminPanel === 'monitor')
                             <div class="glass-panel p-6">
                                 <div class="flex flex-col gap-2">
@@ -459,7 +1083,7 @@
                                                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Customer</th>
                                                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Contact</th>
                                                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Date</th>
-                                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Time</th>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Schedule</th>
                                                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Court</th>
                                                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Players</th>
                                                     <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Payment</th>
@@ -482,7 +1106,7 @@
                                                             </div>
                                                         </td>
                                                         <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $reservation->booking_date->format('M d, Y') }}</td>
-                                                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $reservation->time_slot }}</td>
+                                                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $reservation->timeRangeLabel() }}<br><span class="text-xs text-gray-500 dark:text-gray-400">{{ $reservation->durationLabel() }}</span></td>
                                                         <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $resolveCourtLabel($reservation->court_number, $reservation->court_name) }}</td>
                                                         <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $reservation->players }}</td>
                                                         <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
@@ -612,7 +1236,7 @@
                                             </div>
 
                                             <div>
-                                                <label for="walkin_time_slot" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Time slot</label>
+                                                <label for="walkin_time_slot" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Start time</label>
                                                 <select
                                                     id="walkin_time_slot"
                                                     name="time_slot"
@@ -781,7 +1405,7 @@
                             <div class="glass-panel p-6">
                                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
-                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Rental Rates</h3>
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Rates & Rentals</h3>
                                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                                             Set the paddle and ball rental prices shown on the booking page.
                                         </p>
@@ -910,6 +1534,9 @@
                                         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Court Setup</h3>
                                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                                             Admin can change pila ka courts ang available plus set a custom name and two editable time-based rates for every court.
+                                        </p>
+                                        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                            Court booking rate is managed per court and time window below.
                                         </p>
                                     </div>
                                     <div class="rounded-xl bg-indigo-50 px-4 py-3 text-sm text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
@@ -1070,6 +1697,7 @@
                                 </form>
                             </div>
                         @endif
+                    </div>
                 </div>
             @endif
 
@@ -1101,7 +1729,7 @@
                                 <thead class="bg-gray-50 dark:bg-gray-900/40">
                                     <tr>
                                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Date</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Time</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Schedule</th>
                                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Court</th>
                                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Players</th>
                                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Payment</th>
@@ -1112,7 +1740,7 @@
                                     @forelse($reservations as $reservation)
                                         <tr>
                                             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $reservation->booking_date->format('M d, Y') }}</td>
-                                            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $reservation->time_slot }}</td>
+                                            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $reservation->timeRangeLabel() }}<br><span class="text-xs text-gray-500 dark:text-gray-400">{{ $reservation->durationLabel() }}</span></td>
                                             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $resolveCourtLabel($reservation->court_number, $reservation->court_name) }}</td>
                                             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $reservation->players }}</td>
                                             <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">

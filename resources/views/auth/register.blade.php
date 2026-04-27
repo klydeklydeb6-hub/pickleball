@@ -1,6 +1,12 @@
 <x-guest-layout>
+    @php($redirectTo = old('redirect_to', request('redirect_to')))
+
     <form method="POST" action="{{ route('register') }}">
         @csrf
+
+        @if($redirectTo)
+            <input type="hidden" name="redirect_to" value="{{ $redirectTo }}">
+        @endif
 
         <!-- Name -->
         <div>
@@ -40,7 +46,7 @@
         </div>
 
         <div class="flex items-center justify-end mt-4">
-            <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('login') }}">
+            <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ $redirectTo ? route('login', ['redirect_to' => $redirectTo]) : route('login') }}">
                 {{ __('Already registered?') }}
             </a>
 

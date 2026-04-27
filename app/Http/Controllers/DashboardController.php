@@ -20,6 +20,8 @@ class DashboardController extends Controller
 
     public function __invoke(Request $request): View
     {
+        Reservation::expireStalePendingPayMongoReservations();
+
         $user = $request->user();
 
         if ($user->isAdmin()) {
@@ -65,6 +67,66 @@ class DashboardController extends Controller
                 })
                 ->values();
 
+            $analyticsSeries = collect();
+            $reservationsByDay = $rangeReservations
+                ->groupBy(fn (Reservation $reservation) => $reservation->booking_date->toDateString());
+            $rangeDays = max(1, $reportStart->diffInDays($reportEnd) + 1);
+
+            for ($cursor = $reportStart->copy(); $cursor->lte($reportEnd); $cursor->addDay()) {
+                $dateKey = $cursor->toDateString();
+                $dayReservations = $reservationsByDay->get($dateKey, collect());
+
+                $analyticsSeries->push([
+                    'date' => $cursor->copy(),
+                    'booking_count' => $dayReservations->count(),
+                    'paid_income' => (float) $dayReservations->where('payment_status', 'Paid')->sum('amount'),
+                    'walk_in_count' => $dayReservations->whereNull('user_id')->count(),
+                    'member_booking_count' => $dayReservations->whereNotNull('user_id')->count(),
+                ]);
+            }
+
+            $analyticsPeakBookingDay = $analyticsSeries
+                ->sortByDesc('booking_count')
+                ->first();
+            $analyticsPeakIncomeDay = $analyticsSeries
+                ->sortByDesc('paid_income')
+                ->first();
+            $analyticsTopCourts = $rangeReservations
+                ->groupBy(fn (Reservation $reservation) => $this->reservationManager->courtLabel(
+                    $reservation->court_number,
+                    $reservation->court_name,
+                ))
+                ->map(function ($reservations, string $courtLabel) {
+                    return [
+                        'label' => $courtLabel,
+                        'booking_count' => $reservations->count(),
+                        'paid_income' => (float) $reservations->where('payment_status', 'Paid')->sum('amount'),
+                    ];
+                })
+                ->sortByDesc('booking_count')
+                ->take(4)
+                ->values();
+            $visitorBuckets = $rangeReservations
+                ->filter(function (Reservation $reservation) {
+                    if ($reservation->user_id !== null) {
+                        return true;
+                    }
+
+                    return trim((string) $reservation->customer_name) !== '';
+                })
+                ->groupBy(function (Reservation $reservation) {
+                    if ($reservation->user_id !== null) {
+                        return 'user:' . $reservation->user_id;
+                    }
+
+                    return 'guest:' . mb_strtolower(trim((string) $reservation->customer_name));
+                });
+            $repeatCustomerCount = (int) $visitorBuckets
+                ->filter(fn ($reservations) => $reservations->count() > 1)
+                ->count();
+            $repeatBookingCount = (int) $visitorBuckets
+                ->sum(fn ($reservations) => max(0, $reservations->count() - 1));
+
             return view('dashboard', [
                 'isAdmin' => true,
                 'selectedDate' => $selectedDate,
@@ -88,12 +150,28 @@ class DashboardController extends Controller
                 'reportEndDate' => $reportEnd->toDateString(),
                 'reportRangeLabel' => $this->reportRangeLabel($reportStart, $reportEnd),
                 'dailyReports' => $dailyReports,
+                'analyticsSeries' => $analyticsSeries,
+                'analyticsPeakBookingDay' => $analyticsPeakBookingDay,
+                'analyticsPeakIncomeDay' => $analyticsPeakIncomeDay,
+                'analyticsTopCourts' => $analyticsTopCourts,
+                'analyticsSummary' => [
+                    'range_days' => $rangeDays,
+                    'average_bookings_per_day' => round($rangeReservations->count() / $rangeDays, 1),
+                    'member_bookings' => $rangeReservations->whereNotNull('user_id')->count(),
+                    'walk_in_bookings' => $rangeReservations->whereNull('user_id')->count(),
+                    'paid_bookings' => $rangeReservations->where('payment_status', 'Paid')->count(),
+                    'pending_or_unpaid_bookings' => $rangeReservations->where('payment_status', '!=', 'Paid')->count(),
+                    'max_daily_bookings' => (int) $analyticsSeries->max('booking_count'),
+                ],
                 'quickRanges' => $this->quickRanges($selectedDate),
                 'reservations' => $monitorReservations,
                 'stats' => [
                     'registered_users' => User::count(),
                     'active_courts' => $courtCount,
+                    'range_unique_visitors' => $visitorBuckets->count(),
                     'range_bookings' => $rangeReservations->count(),
+                    'range_repeat_bookings' => $repeatBookingCount,
+                    'range_repeat_customers' => $repeatCustomerCount,
                     'range_paid_income' => (float) $rangeReservations->where('payment_status', 'Paid')->sum('amount'),
                     'range_walk_in_reservations' => $rangeReservations->whereNull('user_id')->count(),
                     'report_days' => $dailyReports->count(),

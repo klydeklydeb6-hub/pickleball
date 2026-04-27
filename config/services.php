@@ -39,4 +39,9 @@ return [
         'page_url' => env('FACEBOOK_PAGE_URL', 'https://www.facebook.com/profile.php?id=61584658084190'),
     ],
 
+    'paymongo' => [
+        'payment_link_url' => env('PAYMONGO_PAYMENT_LINK_URL'),
+        'pending_ttl_minutes' => (int) env('PAYMONGO_PENDING_TTL_MINUTES', 30),
+    ],
+
 ];

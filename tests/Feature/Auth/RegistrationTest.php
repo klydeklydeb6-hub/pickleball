@@ -28,4 +28,18 @@ class RegistrationTest extends TestCase
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
     }
+
+    public function test_new_users_can_register_and_return_to_the_booking_section_when_requested(): void
+    {
+        $response = $this->post('/register', [
+            'name' => 'Booking User',
+            'email' => 'booking@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'redirect_to' => 'booking',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('reservations.index', absolute: false) . '#booking-section');
+    }
 }

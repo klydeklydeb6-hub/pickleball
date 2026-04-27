@@ -28,7 +28,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended($this->redirectPathFor($request->input('redirect_to')));
     }
 
     /**
@@ -43,5 +43,13 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    private function redirectPathFor(?string $redirectTo): string
+    {
+        return match ($redirectTo) {
+            'booking' => route('reservations.index', absolute: false) . '#booking-section',
+            default => route('dashboard', absolute: false),
+        };
     }
 }

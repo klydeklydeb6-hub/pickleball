@@ -50,6 +50,14 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        return redirect($this->redirectPathFor($request->input('redirect_to')));
+    }
+
+    private function redirectPathFor(?string $redirectTo): string
+    {
+        return match ($redirectTo) {
+            'booking' => route('reservations.index', absolute: false) . '#booking-section',
+            default => route('dashboard', absolute: false),
+        };
     }
 }

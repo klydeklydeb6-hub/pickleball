@@ -1,5 +1,9 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+    @php
+        $isAdminShell = auth()->check() && auth()->user()->isAdmin() && request()->routeIs('admin.dashboard');
+        $shellWidthClass = $isAdminShell ? 'max-w-[1920px] 2xl:max-w-[2080px]' : 'max-w-7xl';
+    @endphp
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -23,7 +27,7 @@
             <!-- Page Heading -->
             @isset($header)
                 <header class="relative z-10">
-                    <div class="mx-auto max-w-7xl px-4 pb-2 pt-8 sm:px-6 lg:px-8">
+                    <div class="mx-auto {{ $shellWidthClass }} px-4 pb-2 pt-8 sm:px-6 lg:px-8">
                         <div class="dark-panel relative overflow-hidden px-6 py-7 sm:px-8">
                             <div class="pointer-events-none absolute -left-16 top-0 h-44 w-44 rounded-full bg-sky-400/20 blur-3xl"></div>
                             <div class="pointer-events-none absolute -right-12 bottom-0 h-40 w-40 rounded-full bg-amber-300/20 blur-3xl"></div>

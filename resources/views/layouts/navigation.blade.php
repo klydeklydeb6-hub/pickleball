@@ -1,6 +1,12 @@
 @php
     $user = Auth::user();
     $isAdmin = $user->isAdmin();
+    $isAdminShell = $isAdmin && request()->routeIs('admin.dashboard');
+    $shellWidthClass = $isAdminShell ? 'max-w-[1920px] 2xl:max-w-[2080px]' : 'max-w-7xl';
+    $activeAdminPanel = request()->query('panel', 'analytics');
+    if ($activeAdminPanel === 'dashboard') {
+        $activeAdminPanel = 'analytics';
+    }
     $userInitials = collect(explode(' ', trim($user->name)))
         ->filter()
         ->map(fn (string $part) => strtoupper(substr($part, 0, 1)))
@@ -10,24 +16,29 @@
     $sectionLinks = $isAdmin
         ? [
             [
-                'label' => 'Reservation Monitor',
+                'label' => 'Dashboard',
+                'href' => route('admin.dashboard', ['panel' => 'analytics']),
+                'active' => request()->routeIs('admin.dashboard') && $activeAdminPanel === 'analytics',
+            ],
+            [
+                'label' => 'Monitor',
                 'href' => route('admin.dashboard', ['panel' => 'monitor']),
-                'active' => request()->routeIs('admin.dashboard') && request()->query('panel', 'monitor') === 'monitor',
+                'active' => request()->routeIs('admin.dashboard') && $activeAdminPanel === 'monitor',
             ],
             [
-                'label' => 'Booking',
+                'label' => 'Book Now',
                 'href' => route('admin.dashboard', ['panel' => 'booking']),
-                'active' => request()->routeIs('admin.dashboard') && request()->query('panel') === 'booking',
+                'active' => request()->routeIs('admin.dashboard') && $activeAdminPanel === 'booking',
             ],
             [
-                'label' => 'Income Report',
+                'label' => 'Income',
                 'href' => route('admin.dashboard', ['panel' => 'income']),
-                'active' => request()->routeIs('admin.dashboard') && request()->query('panel') === 'income',
+                'active' => request()->routeIs('admin.dashboard') && $activeAdminPanel === 'income',
             ],
             [
                 'label' => 'Rates, Rentals & Courts',
                 'href' => route('admin.dashboard', ['panel' => 'rates']),
-                'active' => request()->routeIs('admin.dashboard') && request()->query('panel') === 'rates',
+                'active' => request()->routeIs('admin.dashboard') && $activeAdminPanel === 'rates',
             ],
         ]
         : [
@@ -45,7 +56,7 @@
 @endphp
 
 <nav class="relative z-30">
-    <div class="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+    <div class="mx-auto {{ $shellWidthClass }} px-4 pt-6 sm:px-6 lg:px-8">
         <div class="rounded-[1.75rem] border border-white/60 bg-white/80 px-4 shadow-xl shadow-slate-900/5 backdrop-blur-xl">
             <div class="flex min-h-[78px] items-center justify-between gap-4">
                 <div class="flex min-w-0 items-center gap-3">
