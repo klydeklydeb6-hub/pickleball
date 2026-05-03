@@ -8,49 +8,318 @@
     }
 
     body {
-        background-color: #f8fafc;
-    }
-
-    body.app-shell {
-        background-image:
-            radial-gradient(circle at 8% 8%, rgba(56, 189, 248, 0.2), transparent 26%),
-            radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.2), transparent 28%),
-            radial-gradient(circle at 92% 10%, rgba(245, 158, 11, 0.18), transparent 24%),
-            linear-gradient(180deg, #07111f 0%, #0f1d35 21%, #dbeafe 21%, #f5f9ff 62%, #eef5ff 100%);
-        background-attachment: fixed;
+        background-color: #f8f9fa;
     }
 
     ::selection {
-        background: rgba(14, 165, 233, 0.28);
+        background: rgba(23, 193, 232, 0.22);
     }
 }
 
 @layer components {
     .glass-panel {
-        @apply rounded-3xl border backdrop-blur-xl;
-        border-color: rgba(191, 219, 254, 0.58);
-        background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(246, 250, 255, 0.9) 100%);
-        box-shadow: 0 24px 80px rgba(15, 23, 42, 0.1);
+        @apply border backdrop-blur-xl;
+        border-color: rgba(226, 232, 240, 0.92);
+        border-radius: 1rem;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 20px 45px rgba(20, 23, 39, 0.08);
     }
 
     .stat-card {
-        @apply rounded-3xl border p-5;
-        border-color: rgba(191, 219, 254, 0.5);
-        background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(239, 246, 255, 0.9) 100%);
-        box-shadow: 0 18px 48px rgba(148, 163, 184, 0.16);
+        @apply border p-5;
+        border-color: rgba(226, 232, 240, 0.92);
+        border-radius: 1rem;
+        background: #ffffff;
+        box-shadow: 0 12px 30px rgba(20, 23, 39, 0.06);
     }
 
     .dark-panel {
-        @apply rounded-3xl border text-slate-100 backdrop-blur-xl;
-        border-color: rgba(255, 255, 255, 0.1);
-        background:
-            linear-gradient(135deg, rgba(7, 17, 31, 0.94) 0%, rgba(15, 29, 53, 0.9) 58%, rgba(52, 44, 28, 0.78) 100%);
-        box-shadow: 0 24px 80px rgba(2, 6, 23, 0.42);
+        @apply border text-white backdrop-blur-xl;
+        border-color: rgba(255, 255, 255, 0.16);
+        border-radius: 1rem;
+        background: linear-gradient(310deg, #141727 0%, #3a416f 100%);
+        box-shadow: 0 20px 45px rgba(20, 23, 39, 0.2);
     }
 
     .accent-link {
-        @apply inline-flex items-center justify-center rounded-full border px-4 py-2.5 text-sm font-semibold transition duration-200;
+        @apply inline-flex items-center justify-center text-sm font-semibold transition duration-200;
+        min-height: 2.5rem;
+        border-radius: 0.75rem;
+        padding: 0.625rem 1rem;
+        text-decoration: none;
     }
+}
+
+.soft-brand-mark {
+    align-items: center;
+    background: linear-gradient(310deg, #2152ff 0%, #21d4fd 100%);
+    border-radius: 0.75rem;
+    box-shadow: 0 8px 18px rgba(33, 82, 255, 0.24);
+    color: #fff;
+    display: inline-flex;
+    font-weight: 800;
+    justify-content: center;
+    letter-spacing: 0;
+}
+
+.soft-brand-mark-xs {
+    height: 2rem;
+    width: 2rem;
+}
+
+.soft-brand-mark-sm {
+    height: 2.35rem;
+    width: 2.35rem;
+}
+
+.soft-dashboard-page {
+    --softui-primary: #f97316;
+    --softui-primary-soft: rgba(249, 115, 22, 0.1);
+    --softui-border: #e3e3e7;
+    --softui-shadow: 0 20px 27px rgba(0, 0, 0, 0.05);
+}
+
+.soft-dashboard-page .main-content {
+    min-height: 100vh;
+}
+
+.soft-dashboard-page .sidenav {
+    max-height: calc(100vh - 2rem);
+}
+
+.soft-dashboard-page #sidenav-collapse-main.collapse {
+    display: block !important;
+    height: auto !important;
+    max-height: calc(100vh - 19rem);
+    overflow-y: auto;
+    visibility: visible !important;
+}
+
+.soft-dashboard-page #sidenav-collapse-main::-webkit-scrollbar {
+    width: 0;
+}
+
+.soft-dashboard-page .sidenav .navbar-nav .nav-link {
+    margin-bottom: 0.35rem;
+}
+
+.soft-dashboard-page .sidenav .navbar-nav .nav-link.active .icon i {
+    color: #ffffff !important;
+    opacity: 1 !important;
+}
+
+.soft-dashboard-page .soft-sidebar-button {
+    align-items: center;
+    cursor: pointer;
+    display: flex;
+    font: inherit;
+    margin: 0;
+}
+
+.soft-dashboard-page .soft-sidebar-button:hover,
+.soft-dashboard-page .soft-sidebar-button:focus {
+    outline: none;
+}
+
+.soft-dashboard-content > .py-10,
+.soft-dashboard-page .soft-dashboard-content > .py-10 {
+    padding-bottom: 0;
+    padding-top: 0;
+}
+
+.soft-dashboard-content .max-w-\[1920px\],
+.soft-dashboard-content .max-w-7xl,
+.soft-dashboard-page .soft-dashboard-content .max-w-\[1920px\],
+.soft-dashboard-page .soft-dashboard-content .max-w-7xl {
+    max-width: 100%;
+}
+
+.soft-dashboard-page .glass-panel,
+.soft-dashboard-page .stat-card {
+    background: #ffffff;
+    border-color: rgba(227, 227, 231, 0.95);
+    border-radius: 1rem;
+    box-shadow: var(--softui-shadow);
+}
+
+.soft-dashboard-page .dark-panel {
+    background: linear-gradient(310deg, #27272a 0%, #18181b 100%);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.soft-dashboard-page .btn.bg-gradient-info,
+.soft-dashboard-page .btn.bg-gradient-primary {
+    background-image: linear-gradient(310deg, #f97316 0%, #facc15 100%);
+    box-shadow: 0 3px 8px rgba(249, 115, 22, 0.24);
+}
+
+.soft-dashboard-page input:not([type="checkbox"]):not([type="radio"]),
+.soft-dashboard-page select,
+.soft-dashboard-page textarea,
+.soft-dashboard-page .form-control,
+.soft-dashboard-page .form-select {
+    border-color: #d4d4d8;
+    color: #27272a;
+}
+
+.soft-dashboard-page input:not([type="checkbox"]):not([type="radio"]):focus,
+.soft-dashboard-page select:focus,
+.soft-dashboard-page textarea:focus,
+.soft-dashboard-page .form-control:focus,
+.soft-dashboard-page .form-select:focus {
+    border-color: var(--softui-primary);
+    box-shadow: 0 0 0 0.2rem rgba(249, 115, 22, 0.16);
+}
+
+.soft-dashboard-page .text-sky-600,
+.soft-dashboard-page .text-sky-700 {
+    color: var(--softui-primary) !important;
+}
+
+.soft-dashboard-page .bg-sky-50\/85,
+.soft-dashboard-page .bg-sky-50\/75 {
+    background-color: var(--softui-primary-soft) !important;
+}
+
+.soft-dashboard-page .border-sky-100,
+.soft-dashboard-page .border-orange-100,
+.soft-dashboard-page .border-orange-200 {
+    border-color: rgba(249, 115, 22, 0.18) !important;
+}
+
+.soft-dashboard-page .hover\:border-sky-200:hover {
+    border-color: rgba(249, 115, 22, 0.3) !important;
+}
+
+.soft-dashboard-page .hover\:bg-sky-50:hover {
+    background-color: rgba(249, 115, 22, 0.1) !important;
+}
+
+.soft-dashboard-page .hover\:text-sky-700:hover {
+    color: var(--softui-primary) !important;
+}
+
+.soft-dashboard-hero {
+    position: relative;
+}
+
+.soft-dashboard-hero::after {
+    background: url("/soft-ui-dashboard-main/assets/img/shapes/waves-white.svg") center / cover no-repeat;
+    content: "";
+    inset: 0;
+    opacity: 0.1;
+    pointer-events: none;
+    position: absolute;
+}
+
+.soft-dashboard-hero > .card-body {
+    position: relative;
+    z-index: 1;
+}
+
+.soft-auth-page {
+    background: #fff;
+}
+
+.soft-auth-card {
+    position: relative;
+    z-index: 1;
+}
+
+.soft-public-page {
+    background:
+        radial-gradient(circle at 8% 8%, rgba(33, 82, 255, 0.12), transparent 24%),
+        radial-gradient(circle at 92% 12%, rgba(23, 193, 232, 0.16), transparent 22%),
+        linear-gradient(180deg, #f8f9fa 0%, #eef2f7 100%);
+    min-height: 100vh;
+}
+
+.soft-public-hero {
+    background-position: center;
+    background-size: cover;
+    min-height: 26rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.soft-public-hero .container {
+    position: relative;
+    z-index: 1;
+}
+
+.soft-public-stat {
+    min-height: 100%;
+}
+
+.soft-public-main {
+    margin-top: -5rem;
+    position: relative;
+    z-index: 2;
+}
+
+.soft-slot-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+}
+
+.soft-slot-chip {
+    border: 1px solid #e9ecef;
+    border-radius: 0.75rem;
+    min-height: 7rem;
+    padding: 0.875rem;
+}
+
+.soft-slot-chip.is-open {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.soft-slot-chip.is-booked {
+    background: #fff7ed;
+    border-color: #fed7aa;
+}
+
+.soft-agreement-overlay {
+    align-items: center;
+    backdrop-filter: blur(12px);
+    background: rgba(20, 23, 39, 0.78);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    padding: 1.5rem;
+    position: fixed;
+    z-index: 2000;
+}
+
+.soft-agreement-overlay[hidden] {
+    display: none;
+}
+
+.soft-agreement-card {
+    max-height: min(88vh, 900px);
+    overflow: auto;
+    width: min(760px, 100%);
+}
+
+.soft-muted-list {
+    color: #67748e;
+    font-size: 0.875rem;
+    line-height: 1.7;
+}
+
+.soft-public-page .form-control,
+.soft-public-page .form-select,
+.soft-dashboard-page .form-control,
+.soft-dashboard-page .form-select {
+    border-radius: 0.65rem;
+}
+
+.soft-public-page details > summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+.soft-public-page details > summary::-webkit-details-marker {
+    display: none;
 }

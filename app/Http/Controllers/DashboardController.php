@@ -139,7 +139,6 @@ class DashboardController extends Controller
                 'contactNumberReady' => $contactNumberReady,
                 'rateSettingsReady' => $rateSettingsReady,
                 'publicCustomerNamesSettingReady' => FacilitySetting::publicCustomerNamesColumnReady(),
-                'showPublicCustomerNames' => FacilitySetting::publicCustomerNamesVisible(),
                 'minCourtCountAllowed' => max(1, $this->reservationManager->maxReservedCourtForActiveReservations()),
                 'timeSlots' => $timeSlots,
                 'reservationRate' => $this->reservationManager->reservationFee(),
@@ -285,7 +284,7 @@ class DashboardController extends Controller
             'court_details' => $courtDetails,
         ]);
 
-        return redirect(route('admin.dashboard', ['panel' => 'rates'], absolute: false))
+        return redirect(route('admin.dashboard', ['panel' => 'courts'], absolute: false))
             ->with('success', 'Court setup updated successfully.');
     }
 
@@ -298,12 +297,20 @@ class DashboardController extends Controller
         }
 
         $validated = $request->validate([
+            'reservation_rate' => 'sometimes|required|integer|min:0|max:100000',
             'paddle_rent_rate' => 'required|integer|min:0|max:100000',
-            'new_paddle_rent_rate' => 'required|integer|min:0|max:100000',
+            'new_paddle_rent_rate' => 'sometimes|required|integer|min:0|max:100000',
             'ball_rate' => 'required|integer|min:0|max:100000',
         ]);
 
-        FacilitySetting::current()->update($validated);
+        $settings = FacilitySetting::current();
+
+        $settings->update([
+            'reservation_rate' => $validated['reservation_rate'] ?? $settings->reservation_rate,
+            'paddle_rent_rate' => $validated['paddle_rent_rate'],
+            'new_paddle_rent_rate' => $validated['new_paddle_rent_rate'] ?? $settings->new_paddle_rent_rate,
+            'ball_rate' => $validated['ball_rate'],
+        ]);
 
         return redirect(route('admin.dashboard', ['panel' => 'rates'], absolute: false))
             ->with('success', 'Rates updated successfully.');
@@ -409,7 +416,7 @@ class DashboardController extends Controller
 
         $reservation->update([
             'reschedule_unlocked_at' => now(),
-            'reschedule_deadline' => $deadline,
+            'reschedule_deadline' => $deadline->toDateString(),
             'reschedule_reason' => 'Rain / uncovered court',
         ]);
 

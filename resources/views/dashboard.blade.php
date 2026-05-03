@@ -78,31 +78,71 @@
     @endphp
 
     <x-slot name="header">
-        <div class="relative overflow-hidden">
-            <div class="pointer-events-none absolute -left-12 top-0 h-32 w-32 rounded-full bg-sky-400/20 blur-3xl"></div>
-            <div class="pointer-events-none absolute right-0 top-4 h-28 w-28 rounded-full bg-amber-300/20 blur-3xl"></div>
+        @php
+            $headerCards = $isAdmin
+                ? collect([
+                    ['label' => 'Visitors', 'value' => number_format($stats['range_unique_visitors'])],
+                    ['label' => 'Users', 'value' => number_format($stats['registered_users'])],
+                    ['label' => 'Booking', 'value' => number_format($stats['range_bookings'])],
+                    ['label' => 'Repeat Booking', 'value' => number_format($stats['range_repeat_bookings'])],
+                ])
+                : collect($overviewCards)->take(4)->values();
+            $headerIcons = $isAdmin
+                ? ['fas fa-users', 'fas fa-table-tennis', 'fas fa-calendar-check', 'fas fa-cash-register']
+                : ['fas fa-receipt', 'fas fa-calendar-day', 'fas fa-check-circle', 'fas fa-clock'];
+            $headerActionHref = $isAdmin
+                ? route('admin.dashboard', ['panel' => 'monitor'])
+                : route('reservations.index') . '#booking-section';
+        @endphp
 
-            <div class="relative flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-                <div class="max-w-2xl">
-                    <span class="inline-flex items-center rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.32em] text-sky-200">
-                        {{ $heroKicker }}
-                    </span>
-                    <h2 class="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-                        {{ $heroTitle }}
-                    </h2>
-                    <p class="mt-3 max-w-xl text-sm leading-7 text-slate-300">
-                        {{ $heroLead }}
-                    </p>
+        <div class="row mb-4">
+            <div class="col-xl-8">
+                <div class="row">
+                    @foreach($headerCards as $index => $card)
+                        <div class="col-xl-6 col-sm-6 {{ $index > 1 ? 'mt-4' : 'mb-xl-0 mb-4' }}">
+                            <div class="card {{ $index === 0 ? 'bg-gradient-primary' : 'bg-gradient-dark' }}">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-start justify-content-between">
+                                        <div>
+                                            <p class="text-sm mb-0 text-white font-weight-bold">{{ $card['label'] }}</p>
+                                            <h5 class="font-weight-bolder text-white mb-0">{{ $card['value'] }}</h5>
+                                        </div>
+                                        <div class="icon icon-shape bg-white shadow text-center border-radius-md">
+                                            <i class="{{ $headerIcons[$index] ?? 'fas fa-chart-line' }} text-dark text-lg opacity-10" aria-hidden="true"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
+            </div>
 
-                <div class="grid gap-3 sm:grid-cols-2 xl:min-w-[28rem]">
-                    <div class="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur">
-                        <p class="text-[0.68rem] uppercase tracking-[0.28em] text-slate-400">{{ $heroMetaLabel }}</p>
-                        <p class="mt-2 text-lg font-semibold text-white">{{ $heroMetaValue }}</p>
-                    </div>
-                    <div class="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur">
-                        <p class="text-[0.68rem] uppercase tracking-[0.28em] text-slate-400">{{ $heroFocusLabel }}</p>
-                        <p class="mt-2 text-lg font-semibold text-white">{{ $heroFocusValue }}</p>
+            <div class="col-xl-4 mt-xl-0 mt-4">
+                <div class="card h-100">
+                    <div class="card-body p-3">
+                        <h6 class="font-weight-bolder mb-1">{{ $heroTitle }}</h6>
+                        <p class="text-sm text-secondary mb-4">{{ $heroLead }}</p>
+
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-sm font-weight-bold">{{ $heroMetaLabel }}</span>
+                            <span class="text-sm text-dark">{{ $heroMetaValue }}</span>
+                        </div>
+                        <div class="progress mt-2 mb-3">
+                            <div class="progress-bar bg-gradient-primary w-75" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-sm font-weight-bold">{{ $heroFocusLabel }}</span>
+                            <span class="text-sm text-dark">{{ $heroFocusValue }}</span>
+                        </div>
+                        <div class="progress mt-2">
+                            <div class="progress-bar bg-gradient-dark w-100" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+
+                        <a href="{{ $headerActionHref }}" class="btn bg-gradient-dark btn-sm mt-4 mb-0">
+                            {{ $isAdmin ? 'View bookings' : 'Book a court' }}
+                        </a>
                     </div>
                 </div>
             </div>
@@ -192,7 +232,7 @@
                 </div>
 
                 @if($reschedulableReservations->isNotEmpty())
-                    <div class="glass-panel p-6">
+                    <div id="rain-reschedule" class="glass-panel p-6">
                         <div class="flex flex-col gap-2">
                             <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Rain Reschedule Unlocks</h3>
                             <p class="text-sm text-gray-500 dark:text-gray-400">
@@ -212,10 +252,10 @@
                                     }
                                 @endphp
 
-                                <div class="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-5 dark:border-indigo-800 dark:bg-indigo-950/20">
+                                <div class="rounded-2xl border border-orange-200 bg-orange-50/60 p-5 dark:border-orange-800 dark:bg-orange-950/20">
                                     <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                                         <div>
-                                            <p class="text-sm font-semibold text-indigo-700 dark:text-indigo-300">{{ $reservation->receipt_no }}</p>
+                                            <p class="text-sm font-semibold text-orange-600 dark:text-orange-300">{{ $reservation->receipt_no }}</p>
                                             <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">
                                                 Current schedule: {{ $reservation->booking_date->format('M d, Y') }} at {{ $reservation->timeRangeLabel() }}, {{ $resolveCourtLabel($reservation->court_number, $reservation->court_name) }} ({{ $reservation->durationLabel() }})
                                             </p>
@@ -223,7 +263,7 @@
                                                 Unlock reason: {{ $reservation->reschedule_reason ?? 'Rain / uncovered court' }}
                                             </p>
                                         </div>
-                                        <div class="rounded-xl bg-white px-4 py-3 text-sm text-gray-700 shadow-sm ring-1 ring-indigo-100 dark:bg-gray-900 dark:text-gray-200 dark:ring-indigo-900/40">
+                                        <div class="rounded-xl bg-white px-4 py-3 text-sm text-gray-700 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:text-gray-200 dark:ring-orange-900/40">
                                             Choose a new slot until
                                             <span class="font-semibold">{{ $reservation->reschedule_deadline?->format('M d, Y') }}</span>
                                         </div>
@@ -241,7 +281,7 @@
                                                 min="{{ now()->toDateString() }}"
                                                 max="{{ $reservation->reschedule_deadline?->toDateString() }}"
                                                 value="{{ old('booking_date', $suggestedDate->toDateString()) }}"
-                                                class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                 required
                                             >
                                         </div>
@@ -251,7 +291,7 @@
                                             <select
                                                 id="reschedule_court_{{ $reservation->id }}"
                                                 name="court_number"
-                                                class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                 required
                                             >
                                                 @foreach($courts as $court)
@@ -267,7 +307,7 @@
                                             <select
                                                 id="reschedule_time_{{ $reservation->id }}"
                                                 name="time_slot"
-                                                class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                 required
                                             >
                                                 @foreach($timeSlots as $slot)
@@ -290,14 +330,14 @@
             @if($isAdmin)
                 <div class="space-y-6">
                         @if($adminPanel === 'income')
-                            <div class="glass-panel p-6">
+                            <div id="income-report" class="glass-panel p-6">
                                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                     <div>
                                         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Income Report</h3>
                                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                                             Tan-awa ang income, number of bookings, ug customer names for last week or any custom range.
                                         </p>
-                                        <p class="mt-2 text-sm font-medium text-indigo-600 dark:text-indigo-300">
+                                        <p class="mt-2 text-sm font-medium text-orange-600 dark:text-orange-300">
                                             Current report: {{ $reportRangeLabel }}
                                         </p>
                                     </div>
@@ -325,7 +365,7 @@
                                             name="start_date"
                                             type="date"
                                             value="{{ $reportStartDate }}"
-                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                         >
                                     </div>
 
@@ -336,7 +376,7 @@
                                             name="end_date"
                                             type="date"
                                             value="{{ $reportEndDate }}"
-                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                         >
                                     </div>
 
@@ -372,7 +412,7 @@
                                                         <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
                                                             <div class="flex flex-wrap gap-2">
                                                                 @foreach($report['customer_names'] as $customerName)
-                                                                    <span class="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+                                                                    <span class="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-600 dark:bg-orange-950/40 dark:text-orange-300">
                                                                         {{ $customerName }}
                                                                     </span>
                                                                 @endforeach
@@ -411,8 +451,8 @@
                                         'value' => number_format($stats['range_unique_visitors']),
                                         'note' => 'Unique customers in the selected range.',
                                         'subnote' => number_format($stats['range_repeat_customers']) . ' returning customer' . ($stats['range_repeat_customers'] === 1 ? '' : 's'),
-                                        'panel' => 'bg-[linear-gradient(135deg,#0f172a_0%,#1d4ed8_55%,#38bdf8_100%)] text-white',
-                                        'accent' => 'text-sky-100/90',
+                                        'panel' => 'bg-[linear-gradient(310deg,#ea580c_0%,#facc15_100%)] text-white',
+                                        'accent' => 'text-orange-100/90',
                                         'badge' => 'Live traffic',
                                     ],
                                     [
@@ -420,8 +460,8 @@
                                         'value' => number_format($stats['registered_users']),
                                         'note' => 'Registered member accounts in the system.',
                                         'subnote' => number_format($analyticsSummary['member_bookings']) . ' member bookings inside this range',
-                                        'panel' => 'bg-[linear-gradient(135deg,#111827_0%,#334155_55%,#64748b_100%)] text-white',
-                                        'accent' => 'text-slate-200/90',
+                                        'panel' => 'bg-[linear-gradient(310deg,#27272a_0%,#18181b_100%)] text-white',
+                                        'accent' => 'text-zinc-200/90',
                                         'badge' => 'Members',
                                     ],
                                     [
@@ -429,8 +469,8 @@
                                         'value' => number_format($stats['range_bookings']),
                                         'note' => 'Total reservations recorded for this dashboard view.',
                                         'subnote' => number_format($analyticsSummary['average_bookings_per_day'], 1) . ' average bookings per day',
-                                        'panel' => 'bg-[linear-gradient(135deg,#0f766e_0%,#10b981_55%,#6ee7b7_100%)] text-white',
-                                        'accent' => 'text-emerald-100/90',
+                                        'panel' => 'bg-[linear-gradient(310deg,#0ea5e9_0%,#06b6d4_100%)] text-white',
+                                        'accent' => 'text-sky-100/90',
                                         'badge' => 'Reservations',
                                     ],
                                     [
@@ -438,7 +478,7 @@
                                         'value' => number_format($stats['range_repeat_bookings']),
                                         'note' => 'Extra bookings created by returning customers.',
                                         'subnote' => number_format($stats['range_walk_in_reservations']) . ' walk-in bookings in this range',
-                                        'panel' => 'bg-[linear-gradient(135deg,#7c2d12_0%,#ea580c_52%,#fdba74_100%)] text-white',
+                                        'panel' => 'bg-[linear-gradient(310deg,#ef4444_0%,#ec4899_100%)] text-white',
                                         'accent' => 'text-orange-100/90',
                                         'badge' => 'Retention',
                                     ],
@@ -449,7 +489,7 @@
                                         'value' => $analyticsSummary['paid_bookings'],
                                         'total' => $stats['range_bookings'],
                                         'width' => $paidBookingPercentage,
-                                        'bar' => 'bg-blue-500',
+                                        'bar' => 'bg-orange-500',
                                     ],
                                     [
                                         'label' => 'Member bookings',
@@ -470,7 +510,7 @@
                                         'value' => $analyticsSummary['pending_or_unpaid_bookings'],
                                         'total' => $stats['range_bookings'],
                                         'width' => $pendingBookingPercentage,
-                                        'bar' => 'bg-amber-400',
+                                        'bar' => 'bg-amber-500',
                                     ],
                                 ];
                                 $dashboardSignalCards = [
@@ -478,29 +518,29 @@
                                         'label' => 'Average / day',
                                         'value' => number_format($analyticsSummary['average_bookings_per_day'], 1),
                                         'note' => 'Booking count across the selected range.',
-                                        'panel' => 'bg-amber-400 text-slate-950',
-                                        'accent' => 'text-amber-950/70',
+                                        'panel' => 'bg-[linear-gradient(310deg,#ea580c_0%,#facc15_100%)] text-white',
+                                        'accent' => 'text-orange-100/90',
                                     ],
                                     [
                                         'label' => 'Peak booking day',
                                         'value' => data_get($analyticsPeakBookingDay, 'date') ? $analyticsPeakBookingDay['date']->format('M d, Y') : 'No data yet',
                                         'note' => number_format((int) data_get($analyticsPeakBookingDay, 'booking_count', 0)) . ' bookings on the busiest day.',
-                                        'panel' => 'bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 text-white',
-                                        'accent' => 'text-blue-100',
+                                        'panel' => 'bg-[linear-gradient(310deg,#0ea5e9_0%,#06b6d4_100%)] text-white',
+                                        'accent' => 'text-sky-100',
                                     ],
                                     [
                                         'label' => 'Best income day',
                                         'value' => data_get($analyticsPeakIncomeDay, 'date') ? $analyticsPeakIncomeDay['date']->format('M d, Y') : 'No income yet',
                                         'note' => 'PHP ' . number_format((float) data_get($analyticsPeakIncomeDay, 'paid_income', 0), 2) . ' paid income on the strongest day.',
-                                        'panel' => 'bg-gradient-to-br from-emerald-500 via-teal-600 to-emerald-700 text-white',
+                                        'panel' => 'bg-[linear-gradient(310deg,#22c55e_0%,#98ec2d_100%)] text-white',
                                         'accent' => 'text-emerald-100',
                                     ],
                                     [
                                         'label' => 'Days analyzed',
                                         'value' => number_format($analyticsSummary['range_days']),
                                         'note' => 'Custom dashboard reporting window.',
-                                        'panel' => 'bg-gradient-to-br from-slate-800 via-slate-700 to-slate-600 text-white',
-                                        'accent' => 'text-slate-200',
+                                        'panel' => 'bg-[linear-gradient(310deg,#27272a_0%,#18181b_100%)] text-white',
+                                        'accent' => 'text-zinc-200',
                                     ],
                                 ];
                                 $recentDashboardBookings = $reservations
@@ -544,7 +584,7 @@
                                     })
                                     ->implode(' ');
                                 $chartGridLines = collect([0, 25, 50, 75, 100]);
-                                $courtSharePalette = ['#2563eb', '#0f766e', '#f59e0b', '#0f172a', '#7c3aed'];
+                                $courtSharePalette = ['#f97316', '#27272a', '#0ea5e9', '#22c55e', '#eab308', '#ef4444'];
                                 $courtShareLegend = [];
                                 $currentAngle = 0;
 
@@ -606,7 +646,7 @@
                             @endphp
 
                             <div class="space-y-6">
-                                <div class="glass-panel relative overflow-hidden p-6 sm:p-8">
+                                <div id="analytics-dashboard" class="glass-panel relative overflow-hidden p-6 sm:p-8">
                                     <div class="pointer-events-none absolute -left-10 top-0 h-40 w-40 rounded-full bg-sky-300/20 blur-3xl"></div>
                                     <div class="pointer-events-none absolute right-0 top-8 h-40 w-40 rounded-full bg-amber-200/25 blur-3xl"></div>
 
@@ -739,7 +779,7 @@
                                                 <div class="min-w-max rounded-3xl border border-sky-100 bg-white/95 p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900/30" style="min-width: {{ $chartWidth }}px;">
                                                     <div class="flex items-center gap-5 px-3 pb-4 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
                                                         <span class="inline-flex items-center gap-2">
-                                                            <span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                                                            <span class="h-2.5 w-2.5 rounded-full bg-orange-500"></span>
                                                             Bookings
                                                         </span>
                                                         <span class="inline-flex items-center gap-2">
@@ -767,7 +807,7 @@
 
                                                         <polyline
                                                             fill="none"
-                                                            stroke="#2563eb"
+                                                            stroke="#f97316"
                                                             stroke-width="4"
                                                             stroke-linecap="round"
                                                             stroke-linejoin="round"
@@ -782,7 +822,7 @@
                                                                 $bookingY = $chartBottom - (($day['booking_count'] / $maxDailyBookings) * $chartPlotHeight);
                                                                 $incomeY = $chartBottom - (($day['paid_income'] / $maxPaidIncome) * $chartPlotHeight);
                                                             @endphp
-                                                            <circle cx="{{ $x }}" cy="{{ $bookingY }}" r="4.5" fill="#2563eb" />
+                                                            <circle cx="{{ $x }}" cy="{{ $bookingY }}" r="4.5" fill="#f97316" />
                                                             <circle cx="{{ $x }}" cy="{{ $incomeY }}" r="4.5" fill="#10b981" />
                                                         @endforeach
                                                     </svg>
@@ -914,7 +954,7 @@
                                                             <span class="text-xs font-medium uppercase tracking-[0.2em] text-gray-400">{{ $court['booking_count'] }} bookings</span>
                                                         </div>
                                                         <div class="mt-3 h-2 rounded-full bg-gray-200 dark:bg-gray-800">
-                                                            <div class="h-2 rounded-full bg-indigo-500" style="width: {{ $courtWidth }}%;"></div>
+                                                            <div class="h-2 rounded-full bg-orange-500" style="width: {{ $courtWidth }}%;"></div>
                                                         </div>
                                                         <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
                                                             Paid income: PHP {{ number_format($court['paid_income'], 2) }}
@@ -1026,7 +1066,7 @@
                                 </div>
                             </div>
                         @elseif($adminPanel === 'monitor')
-                            <div class="glass-panel p-6">
+                            <div id="booking-monitor" class="glass-panel p-6">
                                 <div class="flex flex-col gap-2">
                                     <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Reservation Monitor</h3>
                                     <p class="text-sm text-gray-500 dark:text-gray-400">
@@ -1046,7 +1086,7 @@
                                             name="date"
                                             type="date"
                                             value="{{ $selectedDate }}"
-                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                         >
                                     </div>
 
@@ -1058,7 +1098,7 @@
                                             type="text"
                                             value="{{ $customerSearch }}"
                                             placeholder="Type customer name"
-                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                         >
                                     </div>
 
@@ -1113,7 +1153,7 @@
                                                             {{ strtoupper($reservation->payment_method) }} / {{ $reservation->payment_status }}
                                                         </td>
                                                         <td class="px-4 py-3 text-sm">
-                                                            <a href="{{ route('reservations.receipt', $reservation) }}" class="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
+                                                            <a href="{{ route('reservations.receipt', $reservation) }}" class="font-medium text-orange-600 hover:text-orange-500 dark:text-orange-400 dark:hover:text-orange-300">
                                                                 {{ $reservation->receipt_no }}
                                                             </a>
                                                         </td>
@@ -1163,7 +1203,7 @@
                                 </div>
                             </div>
                         @elseif($adminPanel === 'booking')
-                            <div class="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.9fr)]">
+                            <div id="walk-in-booking" class="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.9fr)]">
                                 <div class="glass-panel p-6">
                                     <div class="flex flex-col gap-2">
                                         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Admin Booking</h3>
@@ -1183,7 +1223,7 @@
                                                     name="customer_name"
                                                     type="text"
                                                     value="{{ old('customer_name') }}"
-                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                     placeholder="Juan Dela Cruz"
                                                     required
                                                 >
@@ -1196,7 +1236,7 @@
                                                     name="contact_number"
                                                     type="text"
                                                     value="{{ old('contact_number') }}"
-                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                     placeholder="09XXXXXXXXX"
                                                     required
                                                 >
@@ -1211,7 +1251,7 @@
                                                     name="booking_date"
                                                     type="date"
                                                     value="{{ old('booking_date', $selectedDate) }}"
-                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                     required
                                                 >
                                             </div>
@@ -1221,7 +1261,7 @@
                                                 <select
                                                     id="walkin_court_number"
                                                     name="court_number"
-                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                     required
                                                 >
                                                     @foreach($courts as $court)
@@ -1240,7 +1280,7 @@
                                                 <select
                                                     id="walkin_time_slot"
                                                     name="time_slot"
-                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                     required
                                                 >
                                                     @foreach($timeSlots as $slot)
@@ -1260,7 +1300,7 @@
                                                     min="1"
                                                     max="8"
                                                     value="{{ old('players', 4) }}"
-                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                     required
                                                 >
                                             </div>
@@ -1274,7 +1314,7 @@
                                                     min="0"
                                                     max="20"
                                                     value="{{ old('new_paddle_rent_quantity', 0) }}"
-                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                 >
                                             </div>
 
@@ -1287,7 +1327,7 @@
                                                     min="0"
                                                     max="20"
                                                     value="{{ old('paddle_rent_quantity', 0) }}"
-                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                 >
                                             </div>
 
@@ -1300,7 +1340,7 @@
                                                     min="0"
                                                     max="20"
                                                     value="{{ old('ball_quantity', 0) }}"
-                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                 >
                                             </div>
                                         </div>
@@ -1311,7 +1351,7 @@
                                                 <select
                                                     id="walkin_payment_method"
                                                     name="payment_method"
-                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                     required
                                                 >
                                                     <option value="cash" @selected(old('payment_method', 'cash') === 'cash')>Cash</option>
@@ -1324,7 +1364,7 @@
                                                 <select
                                                     id="walkin_payment_status"
                                                     name="payment_status"
-                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                     required
                                                 >
                                                     <option value="Paid" @selected(old('payment_status', 'Paid') === 'Paid')>Paid</option>
@@ -1339,7 +1379,7 @@
                                                     name="payment_reference"
                                                     type="text"
                                                     value="{{ old('payment_reference') }}"
-                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                    class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                     placeholder="Required for GCash only"
                                                 >
                                                 <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -1364,8 +1404,8 @@
                                     <div class="glass-panel p-6">
                                         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Rental Quick Guide</h3>
                                         <div class="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-                                            <div class="rounded-2xl border border-indigo-100 bg-indigo-50/70 px-4 py-4 text-sm text-indigo-900 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-indigo-100">
-                                                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-indigo-500 dark:text-indigo-300">New Paddle</p>
+                                            <div class="rounded-2xl border border-orange-100 bg-orange-50/70 px-4 py-4 text-sm text-orange-900 dark:border-orange-900/40 dark:bg-orange-950/30 dark:text-orange-100">
+                                                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-orange-500 dark:text-orange-300">New Paddle</p>
                                                 <p class="mt-2 text-2xl font-semibold">PHP {{ number_format($newPaddleRentRate, 2) }}</p>
                                             </div>
                                             <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100">
@@ -1402,7 +1442,7 @@
                                 </div>
                             </div>
                         @elseif($adminPanel === 'rates')
-                            <div class="glass-panel p-6">
+                            <div id="rates-courts" class="glass-panel p-6">
                                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Rates & Rentals</h3>
@@ -1410,7 +1450,7 @@
                                             Set the paddle and ball rental prices shown on the booking page.
                                         </p>
                                     </div>
-                                    <div class="rounded-xl bg-indigo-50 px-4 py-3 text-sm text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+                                    <div class="rounded-xl bg-orange-50 px-4 py-3 text-sm text-orange-600 dark:bg-orange-950/40 dark:text-orange-300">
                                         Old paddle: <span class="font-semibold">PHP {{ number_format($oldPaddleRentRate, 2) }}</span>
                                         | New paddle: <span class="font-semibold">PHP {{ number_format($newPaddleRentRate, 2) }}</span>
                                     </div>
@@ -1422,8 +1462,24 @@
                                     </div>
                                 @endif
 
-                                <form method="POST" action="{{ route('admin.rates.update') }}" class="mt-6 grid gap-4 md:grid-cols-3">
+                                <form method="POST" action="{{ route('admin.rates.update') }}" class="mt-6 grid gap-4 md:grid-cols-4">
                                     @csrf
+
+                                    <div>
+                                        <label for="reservation_rate" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Base court rate</label>
+                                        <input
+                                            id="reservation_rate"
+                                            name="reservation_rate"
+                                            type="number"
+                                            min="0"
+                                            value="{{ old('reservation_rate', $reservationRate) }}"
+                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                            required
+                                        >
+                                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                            Default fallback rate for courts without custom windows.
+                                        </p>
+                                    </div>
 
                                     <div>
                                         <label for="paddle_rent_rate" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Old paddle rate</label>
@@ -1433,7 +1489,7 @@
                                             type="number"
                                             min="0"
                                             value="{{ old('paddle_rent_rate', $oldPaddleRentRate) }}"
-                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                             required
                                         >
                                         <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -1449,7 +1505,7 @@
                                             type="number"
                                             min="0"
                                             value="{{ old('new_paddle_rent_rate', $newPaddleRentRate) }}"
-                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                             required
                                         >
                                         <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -1465,7 +1521,7 @@
                                             type="number"
                                             min="0"
                                             value="{{ old('ball_rate', $ballRate) }}"
-                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                             required
                                         >
                                         <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -1480,21 +1536,15 @@
                             </div>
 
                             <div class="glass-panel p-6">
-                                @php
-                                    $showPublicCustomerNamesChecked = old('show_public_customer_names') === null
-                                        ? $showPublicCustomerNames
-                                        : old('show_public_customer_names') === '1';
-                                @endphp
-
                                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Public Reservation List</h3>
                                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                            Choose if customer names only will appear in the public <span class="font-medium">Reservations for</span> list. Contact numbers and emails stay visible to admin only.
+                                            Customer details stay private on the landing page. Visitors and other players only see that a slot is reserved.
                                         </p>
                                     </div>
                                     <div class="rounded-xl bg-sky-50 px-4 py-3 text-sm text-sky-700 dark:bg-sky-950/40 dark:text-sky-300">
-                                        {{ $showPublicCustomerNames ? 'Customer names only are visible publicly' : 'Customer names are hidden publicly' }}
+                                        Privacy locked on
                                     </div>
                                 </div>
 
@@ -1504,28 +1554,9 @@
                                     </div>
                                 @endif
 
-                                <form method="POST" action="{{ route('admin.public-reservations.visibility.update') }}" class="mt-6 space-y-4">
-                                    @csrf
-                                    <input type="hidden" name="show_public_customer_names" value="0">
-
-                                    <label class="flex cursor-pointer items-start gap-4 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 dark:border-gray-700 dark:bg-gray-900/40">
-                                        <input
-                                            type="checkbox"
-                                            name="show_public_customer_names"
-                                            value="1"
-                                            class="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                            @checked($showPublicCustomerNamesChecked)
-                                        >
-                                        <span class="space-y-1">
-                                            <span class="block text-sm font-medium text-gray-900 dark:text-gray-100">Show customer names only on the public reservation list</span>
-                                            <span class="block text-sm text-gray-500 dark:text-gray-400">
-                                                When this is off, visitors and other players only see <span class="font-medium">Reserved slot</span>. When this is on, name only is shown publicly. Admin still keeps the full contact details inside the dashboard.
-                                            </span>
-                                        </span>
-                                    </label>
-
-                                    <x-primary-button>Save Visibility</x-primary-button>
-                                </form>
+                                <div class="mt-6 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-300">
+                                    Public cards use <span class="font-medium">Reserved slot</span> instead of customer names, phone numbers, emails, payment method, payment status, or amount. Admins can still view those details in the dashboard and customers can still see their own booking details.
+                                </div>
                             </div>
 
                             <div class="glass-panel p-6">
@@ -1539,7 +1570,7 @@
                                             Court booking rate is managed per court and time window below.
                                         </p>
                                     </div>
-                                    <div class="rounded-xl bg-indigo-50 px-4 py-3 text-sm text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+                                    <div class="rounded-xl bg-orange-50 px-4 py-3 text-sm text-orange-600 dark:bg-orange-950/40 dark:text-orange-300">
                                         Current courts: <span class="font-semibold">{{ $courtCount }}</span>
                                     </div>
                                 </div>
@@ -1556,7 +1587,7 @@
                                                 min="{{ $minCourtCountAllowed }}"
                                                 max="50"
                                                 value="{{ old('court_count', $courtCount) }}"
-                                                class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                             >
                                             <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                                                 Minimum allowed right now: {{ $minCourtCountAllowed }} court(s), based on active reservations.
@@ -1582,7 +1613,7 @@
                                                             name="court_names[{{ $court['number'] }}]"
                                                             type="text"
                                                             value="{{ old('court_names.' . $court['number'], $court['name']) }}"
-                                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                            class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                             placeholder="Court {{ $court['number'] }}"
                                                         >
                                                     </div>
@@ -1598,7 +1629,7 @@
                                                                     <select
                                                                         id="court_day_start_{{ $court['number'] }}"
                                                                         name="court_day_starts[{{ $court['number'] }}]"
-                                                                        class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                                        class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                                     >
                                                                         @foreach($rateBoundaryOptions as $boundary)
                                                                             <option value="{{ $boundary }}" @selected(old('court_day_starts.' . $court['number'], $court['day_starts_at']) === $boundary)>
@@ -1613,7 +1644,7 @@
                                                                     <select
                                                                         id="court_day_end_{{ $court['number'] }}"
                                                                         name="court_day_ends[{{ $court['number'] }}]"
-                                                                        class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                                        class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                                     >
                                                                         @foreach($rateBoundaryOptions as $boundary)
                                                                             <option value="{{ $boundary }}" @selected(old('court_day_ends.' . $court['number'], $court['day_ends_at']) === $boundary)>
@@ -1631,7 +1662,7 @@
                                                                         type="number"
                                                                         min="0"
                                                                         value="{{ old('court_day_rates.' . $court['number'], $court['day_rate']) }}"
-                                                                        class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                                        class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                                         placeholder="PHP {{ number_format($reservationRate, 2) }}"
                                                                     >
                                                                 </div>
@@ -1648,7 +1679,7 @@
                                                                     <select
                                                                         id="court_night_start_{{ $court['number'] }}"
                                                                         name="court_night_starts[{{ $court['number'] }}]"
-                                                                        class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                                        class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                                     >
                                                                         @foreach($rateBoundaryOptions as $boundary)
                                                                             <option value="{{ $boundary }}" @selected(old('court_night_starts.' . $court['number'], $court['night_starts_at']) === $boundary)>
@@ -1663,7 +1694,7 @@
                                                                     <select
                                                                         id="court_night_end_{{ $court['number'] }}"
                                                                         name="court_night_ends[{{ $court['number'] }}]"
-                                                                        class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                                        class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                                     >
                                                                         @foreach($rateBoundaryOptions as $boundary)
                                                                             <option value="{{ $boundary }}" @selected(old('court_night_ends.' . $court['number'], $court['night_ends_at']) === $boundary)>
@@ -1681,7 +1712,7 @@
                                                                         type="number"
                                                                         min="0"
                                                                         value="{{ old('court_night_rates.' . $court['number'], $court['night_rate']) }}"
-                                                                        class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                                                                        class="mt-2 w-full rounded-xl border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                                                                         placeholder="PHP {{ number_format($reservationRate, 2) }}"
                                                                     >
                                                                 </div>
@@ -1702,7 +1733,7 @@
             @endif
 
             @if(! $isAdmin)
-                <div class="glass-panel p-6">
+                <div id="my-reservations" class="glass-panel p-6">
                     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -1747,7 +1778,7 @@
                                                 {{ strtoupper($reservation->payment_method) }} / {{ $reservation->payment_status }}
                                             </td>
                                             <td class="px-4 py-3 text-sm">
-                                                <a href="{{ route('reservations.receipt', $reservation) }}" class="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
+                                                <a href="{{ route('reservations.receipt', $reservation) }}" class="font-medium text-orange-600 hover:text-orange-500 dark:text-orange-400 dark:hover:text-orange-300">
                                                     {{ $reservation->receipt_no }}
                                                 </a>
                                             </td>

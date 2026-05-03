@@ -272,6 +272,7 @@ class DashboardTest extends TestCase
         $response
             ->assertOk()
             ->assertSeeText('Public Reservation List')
-            ->assertSeeText('Show customer names only on the public reservation list');
+            ->assertSeeText('Privacy locked on')
+            ->assertSeeText('Public cards use Reserved slot instead of customer names');
     }
 }

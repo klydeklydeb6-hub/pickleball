@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FacilitySetting;
 use App\Models\Reservation;
 use App\Support\PayMongoCheckout;
 use App\Support\ReservationManager;
@@ -93,7 +92,6 @@ class ReservationController extends Controller
             'durationOptionsBySlot' => collect($timeSlots)
                 ->mapWithKeys(fn (string $slot) => [$slot => $this->reservationManager->durationOptionsForStartSlot($slot)])
                 ->all(),
-            'showPublicCustomerNames' => FacilitySetting::publicCustomerNamesVisible(),
             'contactNumberReady' => Reservation::contactNumberColumnReady(),
             'durationReady' => Reservation::durationColumnReady(),
             'payMongoCheckoutReady' => $this->payMongoCheckout->isConfigured(),

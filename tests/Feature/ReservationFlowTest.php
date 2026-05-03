@@ -425,7 +425,7 @@ class ReservationFlowTest extends TestCase
             ->assertDontSeeText('Hidden Public Name');
     }
 
-    public function test_public_reservation_list_can_show_customer_names_when_enabled(): void
+    public function test_public_reservation_list_keeps_customer_names_private_even_when_enabled(): void
     {
         FacilitySetting::current()->update([
             'show_public_customer_names' => true,
@@ -449,8 +449,10 @@ class ReservationFlowTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSeeText('Visible Public Name')
-            ->assertDontSeeText('Walk-in / No account');
+            ->assertSeeText('Reserved slot')
+            ->assertDontSeeText('Visible Public Name')
+            ->assertDontSeeText('Walk-in / No account')
+            ->assertDontSeeText('PHP 500.00 | CASH | Paid');
     }
 
     public function test_receipt_page_shows_the_verification_section_for_the_owner(): void
